@@ -1,0 +1,90 @@
+key = "convolutions"
+number = 4
+short = "Filters"
+title = "Convolutions, depth, and residual connections"
+objectives = [
+  "Describe a convolution as a small filter slid across the image.",
+  "Explain a feature map, and why stacking layers changes what is visible.",
+  "Say what a residual connection adds, and where this ResNet's parameters sit.",
+]
+
+[[blocks]]
+heading = "A filter is a small dot product that slides"
+paragraphs = [
+  """\
+    A convolutional layer does not look at the whole image at once. It keeps a \
+    small grid of weights, the filter, and slides it across the picture. At \
+    each stop it takes the dot product of the filter with the local patch and \
+    writes one number. The grid of those numbers is a feature map. One layer \
+    usually has many filters, so it writes many feature maps.""",
+  """\
+    The filter in the diagram is hand-built. It is a Sobel kernel, which \
+    responds to a vertical edge: positive on the right of the window, negative \
+    on the left. It is not a weight from the network. The picture under it is \
+    a real built-in drawing, reduced to luminance. Move the window and the dot \
+    product updates from the nine products.""",
+]
+visual = "convolution"
+
+[[blocks]]
+heading = "Stacking layers, and the skip connection"
+paragraphs = [
+  """\
+    The first filters see small patterns: an edge, a blob of color. The next \
+    layer's filters look at those feature maps rather than at the pixels, so \
+    they can respond to a corner or a texture. Depth is this stacking. A \
+    stride greater than 1 makes the filter jump, so the feature map shrinks \
+    and later layers see a wider piece of the original image in each cell.""",
+  """\
+    ResNet-18 inserts a residual connection in each block. The block is two \
+    3×3 convolutions. Their output is added to the block's input, and then a \
+    ReLU is applied. When the channel count or the spatial size changes, a 1×1 \
+    convolution reshapes the input so the two sides of the addition match. The \
+    block can learn a small change. If the useful change is zero, the added \
+    path still carries the features forward.""",
+]
+visual = "residual"
+
+[[blocks]]
+heading = "Where the parameters and the multiply-adds actually are"
+paragraphs = [
+  """\
+    The bars are counted from this ResNet-18, with random weights so nothing \
+    is downloaded. Parameter counts do not depend on the pixel values. A 3×3 \
+    convolution has 9 weights for every pair of input channel and output \
+    channel, plus one bias per output channel if that layer has a bias. Later \
+    stages have more channels, so they hold more weights. The final linear \
+    layer is a thin slice on top of that.""",
+  """\
+    The first-layer picture uses the model you last trained, when there is \
+    one. Otherwise it shows the random filters novel mode starts from. Each \
+    filter is scaled on its own so you can see it; that scaling is for the \
+    picture, not a step the network takes.""",
+]
+visual = "stages"
+
+[exercise]
+changed = ["mode"]
+instructions = """\
+  Train the built-in shapes once in Transfer mode with every other setting at \
+  its default. Come back to this section and look at the first-layer filters. \
+  Then change only Learning mode to Novel, train again, and look at the \
+  filters once more."""
+look_for = """\
+  In Transfer mode the first layer is the one that arrived with the ImageNet \
+  weights, and this short run does not change it, because that layer is \
+  frozen. The filters have visible structure. In Novel mode the same layer \
+  started random and five epochs on these drawings do not turn it into clean \
+  edge detectors. The parameter bars do not change with the mode. They \
+  describe the shape of the network."""
+question = """\
+  The skip path adds the block's input to the output of its convolutions. What \
+  does that let the block learn, and what happens when the input and the \
+  output have different shapes?"""
+answer = """\
+  The block can learn a change to the features instead of having to rebuild \
+  them. If the useful change is small, the convolutional path can stay small \
+  and the input still gets through the addition. When the number of channels \
+  or the height and width differ, a 1×1 convolution changes the input's shape \
+  first, and that reshaped input is what gets added. A 1×1 convolution mixes \
+  channels at a single pixel; it does not look at neighbors."""

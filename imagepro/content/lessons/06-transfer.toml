@@ -1,0 +1,75 @@
+key = "transfer"
+number = 6
+short = "Transfer"
+title = "Transfer learning and training from scratch"
+objectives = [
+  "Contrast where the weights start in Transfer mode and in Novel mode.",
+  "Explain a frozen layer: it still runs, and it receives no gradient.",
+  "Say what happens to the BatchNorm statistics in each mode.",
+]
+
+[[blocks]]
+heading = "Same shape, different starting weights"
+paragraphs = [
+  """\
+    Both modes build a ResNet-18 and replace the last layer with one that has \
+    your classes. Transfer mode loads weights trained on ImageNet, then \
+    freezes every parameter except the new final layer. Those frozen layers \
+    still run on every image. They still produce features. They do not receive \
+    a gradient, and Adam does not step them. The first Transfer run downloads \
+    the ImageNet weights. The training lab states the file size when that \
+    starts.""",
+  """\
+    Novel mode builds the same architecture with random weights and trains \
+    every parameter, including the new final layer. The final layer starts \
+    random in both modes. What changes is the backbone: pretrained and frozen, \
+    or random and trainable. The images, the loss, and the learning rate are \
+    the same. The cards under the images count both choices for the class \
+    count in the lab.""",
+]
+visual = "modes"
+
+[[blocks]]
+heading = "BatchNorm keeps a mean and a variance per channel"
+paragraphs = [
+  """\
+    Batch normalization shifts each channel using a mean and a variance. \
+    During ordinary training those come from the current batch, and a running \
+    average is stored for later. The stored average is what evaluation uses, \
+    including validation and prediction.""",
+  """\
+    In Transfer mode the backbone is frozen, but leaving BatchNorm in training \
+    mode would still let those stored averages drift. The app keeps every \
+    BatchNorm layer in evaluation mode, so the ImageNet mean and variance stay \
+    put while the final layer trains. That is part of what a frozen backbone \
+    means here.""",
+  """\
+    In Novel mode the running averages start near their initialization. The \
+    library's default momentum barely moves them on a handful of images, and \
+    validation would then score the features with the wrong shift. After each \
+    Novel epoch the app recomputes those averages from one pass over the \
+    training images. The weights of the layer are not changed by that pass. \
+    They still learn through Adam, like any other trainable parameter.""",
+]
+visual = "batchnorm"
+
+[exercise]
+changed = ["mode"]
+instructions = """\
+  Use the built-in shapes and seed {default_seed}. Train in Transfer with \
+  every other setting at its default. Then change only Learning mode to Novel \
+  and train again. If the recent-runs table already has those two runs, you \
+  can read them instead of training twice more."""
+look_for = """\
+  The trainable counts, the final losses, and the caption under the curves \
+  about BatchNorm. Novel updates every parameter, so the same five epochs are \
+  a different experiment, not a slower copy of the Transfer run. The final \
+  layer starts random either way."""
+question = "During a Transfer run, do the BatchNorm running statistics move?"
+answer = """\
+  No. Those layers stay in evaluation mode, so they keep the mean and variance \
+  that were stored with the ImageNet weights. Novel mode does the opposite at \
+  the end of each epoch: it recomputes the running statistics from the \
+  training images. Left on the library's default momentum, a small set would \
+  leave those averages near their initialization, and the validation loss \
+  would describe that mismatch."""

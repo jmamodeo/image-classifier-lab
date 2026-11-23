@@ -1,0 +1,77 @@
+key = "evaluation"
+number = 7
+short = "Scores"
+title = "Accuracy, confusion, and confidence"
+objectives = [
+  "Read accuracy, a confusion matrix, and per-class accuracy.",
+  "Explain what the softmax percent measures.",
+  "Notice what a tiny holdout can and cannot support.",
+]
+
+[[blocks]]
+heading = "Accuracy is a fraction"
+paragraphs = [
+  """\
+    Accuracy is the number of images labeled correctly divided by the number \
+    scored. The chart in the lab plots that fraction for the training images \
+    and for the holdout, on the same axis from 0 to 1. Per-class accuracy is \
+    the same fraction inside one row: of the held-out images of this class, \
+    how many the model called by the right name. A class with no images in the \
+    row would be undefined. This app's split never leaves a class out.""",
+]
+
+[[blocks]]
+heading = "The grid shows which mix-ups happened"
+paragraphs = [
+  """\
+    A confusion matrix puts the true class on the rows and the predicted class \
+    on the columns. The diagonal is the images that were right. An \
+    off-diagonal cell is a particular mistake: that many images of the row's \
+    class were called the column's class. Accuracy collapses all of that into \
+    one fraction. The grid tells you whether the errors are spread out or all \
+    one kind of mix-up.""",
+  """\
+    The first grid is made up, so you can practice the arithmetic on numbers \
+    that are not pretending to be a run. Under it, if you have trained, is the \
+    confusion matrix from your latest run.""",
+]
+visual = "evaluation"
+
+[[blocks]]
+heading = "The percent is a share of the score"
+paragraphs = [
+  """\
+    The percent next to a prediction is the softmax share of the winning \
+    class, from the lesson on the linear layer. It is a property of this \
+    image's scores across the classes you trained. It does not measure the \
+    chance that the label is right. A model trained on a few drawings can put \
+    99% of its share on the wrong class. The bar chart shows whether one class \
+    owns the share or the model is split.""",
+  """\
+    On two held-out images, 100% per-class accuracy means those two drawings \
+    were labeled correctly. It is a demonstration of the measurement, and a \
+    weak claim about the next photograph.""",
+]
+
+[exercise]
+changed = []
+instructions = """\
+  Use the built-in shapes and leave every sidebar setting at its default. If \
+  the latest run already matches that, read it. Otherwise train once. Read the \
+  confusion matrix and the per-class table. If you have a picture of a circle, \
+  a square, or a triangle, use Try an image as well."""
+look_for = """\
+  Which cells are off the diagonal, and how many validation images each \
+  percent in the table is made of. A perfect row on two images is those two \
+  images. If you classify a new picture, read the bar chart of shares next to \
+  the winning percent."""
+question = """\
+  The model assigns 95% to the wrong class. What is that 95%, and what is 100 \
+  minus 95 in this case?"""
+answer = """\
+  95% is the softmax share of the winning class among the classes you trained. \
+  It is not a measured chance that the label is right, and 100 minus 95 is not \
+  a measured error rate. It is the share left over for the other classes on \
+  this image. Use the bar chart to see whether that leftover is one close \
+  rival or many small shares, and use the confusion matrix to see which \
+  classes the model actually mixed up on the holdout."""
