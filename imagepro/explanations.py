@@ -1,14 +1,17 @@
 """Short explanations shown next to the controls.
 
 Each concept has a one-sentence summary for the control's caption and a longer
-body for the panel. Numbers that the code also uses are filled in from those
-constants so the prose cannot drift from the implementation.
+body for the panel. The text lives in ``imagepro/content/concepts.toml``, with
+one paragraph per list item in ``body``. Numbers that the code also uses are
+written there as placeholders and filled in from those constants so the prose
+cannot drift from the implementation.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+from imagepro.content_files import fill, read_toml
 from imagepro.data import FLIP_PROBABILITY, MAX_ROTATION_DEGREES, MIN_IMAGES_PER_CLASS
 from imagepro.training import MIN_BATCH_SIZE
 
@@ -22,149 +25,25 @@ class Concept:
     body: str
 
 
-def _build() -> dict[str, Concept]:
-    flip = f"{FLIP_PROBABILITY:.0%}"
-    degrees = f"{MAX_ROTATION_DEGREES:g}"
+def placeholder_values() -> dict[str, object]:
+    """Values for the ``{name}`` placeholders in ``concepts.toml``."""
     return {
-        "transfer_learning": Concept(
-            title="Transfer learning and training from scratch",
-            summary=(
-                "Transfer trains a new final layer on a frozen ImageNet backbone. "
-                "Novel trains every layer from random weights."
-            ),
-            body=(
-                "Transfer mode starts from a ResNet-18 trained on ImageNet, a large set of "
-                "everyday photographs. Those layers already respond to edges, colors, and "
-                "textures. The app replaces the last layer with a new one for your classes, "
-                "freezes the rest, and trains only that new layer. The first transfer run "
-                "downloads the ImageNet weights, about 45 MB. The backbone's BatchNorm "
-                "statistics stay as they were on ImageNet; they do not drift while the last "
-                "layer trains.\n\n"
-                "Novel mode uses the same ResNet-18 shape with random weights, and every "
-                "layer is allowed to learn from your images. The new final layer starts "
-                "random in both modes. What changes is the backbone: pretrained and frozen, "
-                "or random and trainable. The two cards under your images count the "
-                "parameters either way.\n\n"
-                "On a small novel-mode set, BatchNorm's stored averages are refreshed from "
-                "the training images at the end of each epoch. Left on the default momentum, "
-                "those averages would still be near their initialization, and the validation "
-                "loss would describe that mismatch instead of the classifier.\n\n"
-                "The images, the loss, and the learning rate are the same in both modes. "
-                "The difference is where the weights start and which of them can change."
-            ),
-        ),
-        "learning_rate": Concept(
-            title="Learning rate",
-            summary="The size of the step Adam takes after each batch.",
-            body=(
-                "The learning rate is the size of the step Adam takes after each batch. "
-                "A larger step can bring the loss down sooner, and it can also overshoot "
-                "until the loss jumps or becomes infinite. If training stops because the "
-                "loss is not a real number, choose a smaller learning rate first. 0.001 is "
-                "a solid default for Adam on this model. The slider only offers a few "
-                "sizes, spaced so each step is a meaningful change rather than a typo."
-            ),
-        ),
-        "batch_size": Concept(
-            title="Batch size",
-            summary="How many images are scored before each weight update.",
-            body=(
-                "The batch size is how many images the model scores before each weight "
-                f"update. Smaller batches make noisier steps. Larger batches make steadier "
-                f"steps and use more memory. ResNet-18 uses BatchNorm, which needs at least "
-                f"{MIN_BATCH_SIZE} images in a batch, so 1 is not available. If the batch is "
-                "bigger than the training set, the whole set is one update. When the last "
-                "batch would be a single image, that image is left out of the epoch rather "
-                "than producing a NaN loss."
-            ),
-        ),
-        "epochs": Concept(
-            title="Epochs",
-            summary="How many times the model walks through the training images.",
-            body=(
-                "An epoch is one pass through the training images. More epochs give the "
-                "model more chances to reduce training loss, and more chances to memorize "
-                "those exact images. Stop adding epochs when the validation loss stops "
-                "improving. The slider tops out at 30 so a first run stays short enough to "
-                "watch."
-            ),
-        ),
-        "validation": Concept(
-            title="Validation split",
-            summary="A fraction of each class is held out and never used for updates.",
-            body=(
-                "Before training, each class is split into images the optimizer can learn "
-                "from and images it cannot. The slider is the percent held out. Every class "
-                f"keeps at least one training image and one validation image, which is why "
-                f"each class needs at least {MIN_IMAGES_PER_CLASS} images, and the actual "
-                "split can differ slightly from the percentage. Validation loss and accuracy "
-                "are the check on whether the model learned something that works past the "
-                "training set. On a handful of held-out images those numbers jump around. "
-                "Read the direction of the curve.\n\n"
-                "The loss on the chart is the mean cross-entropy per image, not a sum over "
-                "the epoch, so it stays comparable when you add images or change the batch "
-                "size."
-            ),
-        ),
-        "overfitting": Concept(
-            title="Overfitting",
-            summary="Training keeps improving while the held-out images do not.",
-            body=(
-                "Overfitting is the model getting better on the training images without "
-                "getting better on images it did not train on. You can see it when the "
-                "training curve keeps falling and the validation curve flattens or rises. "
-                "The two curves share an axis so that split is visible. More images, "
-                "augmentation, fewer epochs, and transfer mode, which leaves fewer weights "
-                "free to memorize, are the practical counters in this app."
-            ),
-        ),
-        "augmentation": Concept(
-            title="Augmentation",
-            summary="Training images are flipped and slightly rotated again every epoch.",
-            body=(
-                f"Each time a training image is loaded, it may be flipped left-right "
-                f"({flip} of the time) and rotated up to {degrees} degrees. The next epoch "
-                "loads it again and draws a new flip and angle, so the model does not see "
-                "an identical tensor every pass. The preview under your images shows a few "
-                "of those draws. It uses its own random generator, so looking at it does "
-                "not change the run you are about to start. Validation images, and the "
-                "image you classify later, are only resized and normalized."
-            ),
-        ),
-        "confidence": Concept(
-            title="Confidence",
-            summary="The percent beside a prediction is a softmax share, not a guarantee.",
-            body=(
-                "The percent next to a prediction is a softmax score. The network's raw "
-                "scores are rescaled so they add up to 100%, and the percent is the share "
-                "given to the chosen class. It is not a measured chance that the label is "
-                "right. A model trained on a few images can be 99% confident and wrong. "
-                "Use the bar chart to see whether one class owns the score or the model "
-                "is split between several."
-            ),
-        ),
-        "seed": Concept(
-            title="Seed",
-            summary="Fixes the random choices so a run can be repeated.",
-            body=(
-                "The seed fixes the random choices in a run: the initial weights, which "
-                "images are held out, the order of the batches, and the sequence of "
-                "augmentations. The same seed repeats the run. A different seed shows how "
-                "much the result depended on those choices. On a GPU some kernels can still "
-                "drift a little; on CPU the run is meant to repeat exactly."
-            ),
-        ),
-        "shuffle": Concept(
-            title="Shuffle",
-            summary="Puts the training images in a new order every epoch.",
-            body=(
-                "Shuffle puts the training images in a new order every epoch. Leave it on. "
-                "In a fixed order the model may see a run of one class followed by a run "
-                "of the next, and the updates swing between them. The validation images "
-                "are scored in a fixed order so the confusion matrix does not bounce "
-                "around for no reason."
-            ),
-        ),
+        "flip_percent": f"{FLIP_PROBABILITY:.0%}",
+        "rotation_degrees": f"{MAX_ROTATION_DEGREES:g}",
+        "min_batch_size": MIN_BATCH_SIZE,
+        "min_images_per_class": MIN_IMAGES_PER_CLASS,
+    }
+
+
+def _build() -> dict[str, Concept]:
+    values = placeholder_values()
+    return {
+        key: Concept(
+            title=fill(record["title"], values),
+            summary=fill(record["summary"], values),
+            body="\n\n".join(fill(text, values) for text in record["body"]),
+        )
+        for key, record in read_toml("concepts.toml").items()
     }
 
 

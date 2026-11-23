@@ -1,0 +1,87 @@
+key = "images"
+number = 1
+short = "Pixels"
+title = "Images as numbers"
+objectives = [
+  "Read a picture as a grid of numbers, with three color channels.",
+  "State the shape of one image and of a batch in this app.",
+  "Explain the resize and the normalization that happen before the network.",
+]
+
+[[blocks]]
+heading = "A picture is a grid"
+paragraphs = [
+  """\
+    A digital picture is a grid. Each cell is a pixel. In a color picture each \
+    pixel holds three integers, usually from 0 to 255: one for red, one for \
+    green, and one for blue. Those three lists are the channels. A grayscale \
+    picture would have one channel. The drawings below are real built-in \
+    shapes, the same kind the training lab can learn.""",
+  """\
+    The heatmaps are the three channels of one drawing. The grid is an 8×8 \
+    patch of the red channel, chosen because the red values there actually \
+    vary. A flat patch of background would be a less honest picture of the \
+    grid.""",
+]
+visual = "channels"
+
+[[blocks]]
+heading = "The block of numbers the network multiplies"
+paragraphs = [
+  """\
+    The word tensor, in this app, means that block of numbers. One image is \
+    three-dimensional: 3 channels, then height, then width. After resizing, \
+    that is 3 × {image_size} × {image_size}, which is {input_values} numbers. \
+    A batch stacks several images on a new axis, so its shape is N × 3 × \
+    {image_size} × {image_size}. N is how many images are scored together.""",
+  """\
+    PyTorch stores the channels before the height and the width. A person \
+    often thinks of a photo as {image_size} × {image_size} × 3. The pixels are \
+    the same; the order of the axes is a convention the multiplications depend \
+    on. When a shape is printed later, read it as channels first.""",
+]
+visual = "tensor"
+
+[[blocks]]
+heading = "Resize, then put the numbers on the scale the network expects"
+paragraphs = [
+  """\
+    Every image is resized to {image_size}×{image_size} with a bilinear \
+    resize: each new pixel is a weighted blend of the pixels around it. A \
+    phone photo and a tiny drawing become the same shape, which is the shape \
+    this ResNet was built for.""",
+  """\
+    The integers are then divided by 255, so each channel sits between 0 and \
+    1. Then each channel is shifted and scaled by the mean and standard \
+    deviation of ImageNet, the large set of photographs the pretrained weights \
+    saw. The means are {imagenet_mean}. The standard deviations are \
+    {imagenet_std}. Both modes use those same numbers, so a comparison of \
+    Transfer and Novel is about the weights, not about a different pixel \
+    scale.""",
+  """\
+    Move the slider under the charts. It recomputes one pixel of the patch: \
+    the 0–255 triple, the 0–1 triple, and the normalized triple.""",
+]
+visual = "normalize"
+
+[exercise]
+changed = []
+instructions = """\
+  In the training lab below, choose Built-in shapes. Leave every sidebar \
+  setting where it is. Look at the row of pictures under Augmentation and the \
+  holdout. You do not need to press Train."""
+look_for = """\
+  The training draws are the same drawing, flipped or slightly rotated. The \
+  validation picture is only resized. Both of them still go through the 0–1 \
+  scaling and the ImageNet normalization before the network sees them; the \
+  preview is showing you the pictures, not those numbers."""
+question = """\
+  The validation image skips the flip and the rotation. What still happens to \
+  its pixels before the network multiplies them, and why does prediction use \
+  that same path?"""
+answer = """\
+  It is resized, scaled from 0–255 into 0–1, and then normalized with the \
+  ImageNet mean and standard deviation. The flip and the rotation are \
+  training-only, so the holdout stays a check on images the optimizer did not \
+  practice on. Prediction scores a new picture the way validation does: \
+  resize, scale, and normalize, with no flip and no rotation."""

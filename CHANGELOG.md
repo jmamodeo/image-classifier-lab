@@ -4,6 +4,7 @@
 
 ### Changed
 
+- The lesson text and the sidebar explanations moved out of `imagepro/curriculum.py` and `imagepro/explanations.py` into TOML files under `imagepro/content/`, which ship inside the package. The rendered text is unchanged. Everything in `imagepro/content/` is licensed under CC BY 4.0 (`LICENSE-CONTENT`); everything else stays MIT.
 - The README Development section states that changes go through a pull request into `main` once CI is green, and that releases, DOIs, history rewrites, and force-pushes need the maintainer's OK.
 
 ## 1.1.1 - 2026-11-19

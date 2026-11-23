@@ -45,6 +45,9 @@ Changelog = "https://github.com/jmamodeo/image-classifier-lab/blob/main/CHANGELO
 [tool.setuptools.packages.find]
 include = ["imagepro*"]
 
+[tool.setuptools.package-data]
+imagepro = ["content/README.md", "content/**/*.toml"]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100

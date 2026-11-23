@@ -1,0 +1,84 @@
+key = "neuron"
+number = 2
+short = "Neuron"
+title = "A neuron and a linear layer"
+objectives = [
+  "Compute a weighted sum and add a bias.",
+  "Describe the final layer of this ResNet: one score per class.",
+  "Explain softmax as turning scores into shares that add to 1.",
+]
+
+[[blocks]]
+heading = "One neuron is a weighted sum"
+paragraphs = [
+  """\
+    A neuron takes a list of inputs, multiplies each one by its own weight, \
+    adds those products, and adds one more number called the bias. A positive \
+    weight means that input pushes the result up. A negative weight pushes it \
+    down. A zero input contributes nothing, whatever its weight is. The \
+    picture uses a three-input example you can recompute by hand. Drag the \
+    bias and the total moves by exactly that amount.""",
+]
+visual = "neuron"
+formula = 'y = w_1 x_1 + w_2 x_2 + \cdots + w_n x_n + b'
+
+[[blocks]]
+heading = "The last layer is many of those, one per class"
+paragraphs = [
+  """\
+    This ResNet ends in a linear layer, which is one neuron per class, all of \
+    them reading the same inputs. Those inputs are what remains after the \
+    convolutions and a global average pool: one number per channel of the last \
+    stage. The layer's weights are a matrix with one row per class and one \
+    column per input, plus one bias per class. Its outputs are scores. A score \
+    may be negative. It is not yet a share of anything.""",
+  """\
+    The lines under the chart are read from this model, for the class count \
+    currently set in the lab. Transfer mode trains this layer and freezes \
+    everything in front of it. Novel mode trains this layer too, and also \
+    trains the rest.""",
+]
+visual = "final_layer"
+
+[[blocks]]
+heading = "Softmax turns scores into shares"
+paragraphs = [
+  """\
+    Softmax takes the exponential of each score and divides by the sum of \
+    those exponentials. Every share is positive, and the shares add to 1, so \
+    they can be drawn as percents. The largest score gets the largest share. \
+    How large depends on the gaps: two equal scores split their part of the \
+    pie, and one score far above the others takes almost all of it.""",
+  """\
+    The implementation subtracts the largest score before the exponential. \
+    That keeps the math from overflowing, and it does not change the shares. \
+    Move the sliders and watch the shares move. The percent beside a \
+    prediction, later, is the winning share from this same function.""",
+]
+visual = "softmax"
+formula = '\mathrm{share}_i = e^{z_i} \big/ \sum_j e^{z_j}'
+
+[exercise]
+changed = ["mode"]
+instructions = """\
+  Stay on Built-in shapes. Change only Learning mode, from Transfer to Novel \
+  and back, and read the two parameter cards under the images. You do not need \
+  to press Train."""
+look_for = """\
+  The total parameter count is the same on both cards. Transfer's trainable \
+  count is only the new final layer. Novel's trainable count equals the total. \
+  The final-layer arithmetic in this section should match Transfer's trainable \
+  count for the class count you are looking at (three, for the built-in \
+  shapes)."""
+question = """\
+  Transfer's trainable count equals (inputs × classes) + classes. Where do the \
+  inputs come from, and why is the rest of the network missing from that \
+  count?"""
+answer = """\
+  The convolutions end in a global average pool that leaves one number per \
+  channel of the last stage. That width is the input count of the final layer; \
+  this section prints it from the model. Each class gets one weight for each \
+  of those numbers, plus one bias. In Transfer mode every earlier parameter is \
+  frozen, so it is in the total and not in the trainable count. The new final \
+  layer starts with random weights in both modes. Transfer's head start is the \
+  frozen feature extractor in front of that layer."""

@@ -1,0 +1,165 @@
+key = "hardware"
+number = 8
+short = "Hardware"
+title = "Arithmetic, memory, and the device"
+objectives = [
+  "Describe a step as multiply-adds plus memory for weights and activations.",
+  "Separate the counts this page computes from the times your run measures.",
+  "Relate batch size to images per second and to activation memory.",
+  "Compare on-device inference, compute units, and export precision.",
+]
+
+[[blocks]]
+heading = "The arithmetic is multiply-adds"
+paragraphs = [
+  """\
+    A convolution and a linear layer are long runs of multiply-adds: multiply \
+    a weight by an input and add it into a total. The same small dot product \
+    happens at many pixels and for many filters, and those dot products do not \
+    have to wait for each other. Bias additions, BatchNorm, ReLU, and pooling \
+    are real work and much smaller than the convolutions, so the count below \
+    leaves them out and says so.""",
+  """\
+    FLOPs, on this page, means twice the multiply-adds, one multiplication and \
+    one addition. Some write-ups call a multiply-add itself one FLOP. Both \
+    numbers are shown so the convention is visible. The count is one forward \
+    pass of this ResNet, for the class count and the batch size in the \
+    sidebar. A training step also runs a backward pass, which does more \
+    arithmetic than the forward pass. That extra work is not in the counted \
+    number.""",
+]
+visual = "hardware"
+
+[[blocks]]
+heading = "What has to sit in memory"
+paragraphs = [
+  """\
+    The parameters are the same tensors no matter how large the batch is. \
+    Gradients exist for the trainable ones, one buffer the same size as those \
+    parameters, during the backward pass. Adam keeps two more float32 buffers \
+    per trainable parameter, the running averages it uses to rescale the step. \
+    BatchNorm also stores a running mean and variance per channel; those are \
+    buffers, not Adam state.""",
+  """\
+    Each image also produces activations, the feature maps between layers. \
+    Their size grows with the batch, because each image has its own. The \
+    forward-output total adds up the tensor each leaf layer returned. Those \
+    tensors are not all stored at the same instant, so the total is a parts \
+    list, not a reading from a memory meter. The backward pass keeps extra \
+    tensors. Transfer mode needs fewer of them, because the frozen backbone \
+    receives no gradients.""",
+  """\
+    This app trains in float32, four bytes per number. Export can use float16 \
+    instead. That choice affects the exported model, not the training run.""",
+]
+
+[[blocks]]
+heading = "Why a GPU or an accelerator changes the clock"
+paragraphs = [
+  """\
+    A CPU handles many kinds of work. A GPU, reached through CUDA or Metal \
+    (MPS), is built to do many of these multiplies at once. A larger batch \
+    gives the GPU more work in parallel; with a tiny batch, launching that \
+    work can eat up the savings. The GPU still needs memory for the extra \
+    activations.""",
+  """\
+    Training changes weights using gradients. You can train on the CPU or an \
+    available GPU. Inference uses the learned weights without changing them. \
+    The Neural Engine on Apple silicon is built for that kind of work: Core ML \
+    can use it for inference, but it cannot train the model in this lab.""",
+  """\
+    The Hardware panel shows what is available and why an option might be \
+    disabled. Images per second in the table is measured wall-clock time: \
+    training images scored, divided by the training pass, including loading \
+    the images and the optimizer step. Validation time is a separate column. \
+    When the run used CUDA, a peak allocator figure is reported too. CPU and \
+    MPS runs do not invent one.""",
+]
+visual = "devices"
+
+[[blocks]]
+heading = "Inference on the device"
+paragraphs = [
+  """\
+    An exported model can classify an image on the device itself. The image \
+    never needs to leave that device, which helps privacy. There is no network \
+    round trip to wait for. Dedicated accelerators can also do the same work \
+    for less energy, though the actual latency and energy depend on the \
+    machine and the model.""",
+  """\
+    Core ML can be allowed CPU only, CPU and GPU, CPU and Neural Engine, or \
+    ALL. These settings say what Core ML may use, not what it did use. Timings \
+    alone cannot tell you where a layer ran. CPU_AND_NE is disabled on \
+    machines without a Neural Engine.""",
+  """\
+    Float16 takes half as many bytes per weight as float32, but the package \
+    also includes other data. Rounding can move the scores without changing \
+    the winning class. Use the sidebar Precision control and compare measured \
+    package size, median latency, top-1 agreement, and the largest probability \
+    difference against float32 PyTorch.""",
+]
+visual = "on_device"
+
+[exercise]
+changed = ["batch_size", "device"]
+instructions = """\
+  Use the built-in shapes and batch size {min_batch_size}. Train on CPU, then \
+  switch to an available GPU and train with the same settings. Change only the \
+  batch size to {comparison_batch} and repeat both runs. If neither GPU is \
+  available, compare the two batch sizes on CPU."""
+look_for = """\
+  Find Train s/epoch in the run log by Device and Batch. Did the gap change? \
+  The first epoch on a GPU can include one-time setup, so compare the later \
+  epochs in the history as well. In the memory chart, forward outputs grow \
+  with the batch; parameter and Adam bytes stay put."""
+question = "Why might a GPU pull ahead on a larger batch but not on a tiny one?"
+answer = """\
+  More images give the GPU more work to do in parallel. On a tiny batch, the \
+  time to launch that work can cancel out the savings. Use your measured times \
+  rather than assuming a speedup."""
+
+[[extra_exercises]]
+key = "neural-engine"
+changed = ["inference_backends"]
+instructions = """\
+  Train and export a model. Predict whether CPU_AND_NE will beat CPU_AND_GPU \
+  on one image, then select those backends in Hardware and measure them. \
+  Without a Neural Engine, CPU_AND_NE is unavailable: compare CPU_ONLY and \
+  CPU_AND_GPU instead. If Core ML prediction is unavailable, compare the \
+  PyTorch backends that are enabled."""
+look_for = "Compare the median latency rows for the same export."
+question = "Did the option you picked have the lower measured latency?"
+answer = """\
+  Read the medians on this machine. A lower median means the setting was \
+  faster here, not that every layer ran on its accelerator."""
+
+[[extra_exercises]]
+key = "precision"
+changed = ["precision"]
+instructions = """\
+  Export the same trained model in float32, then switch Precision to float16 \
+  and export again. Measure each precision with the same inference backends. \
+  If Core ML prediction is unavailable, compare package sizes alone."""
+look_for = """\
+  Float16 halves the weight bytes. Check how close the full package comes to \
+  half the size, whether the winning labels still match float32 PyTorch, and \
+  how the median latency changes."""
+question = "Can the scores change even when the predicted labels match?"
+answer = """\
+  Yes. Rounding can shift probabilities without changing which one is largest. \
+  Check both the top-1 agreement and the maximum absolute probability \
+  difference."""
+
+[[extra_exercises]]
+key = "all"
+changed = ["inference_backends"]
+instructions = """\
+  Select Core ML ALL and the other available Core ML settings. Measure them \
+  together on the same export. If Core ML prediction is unavailable here, use \
+  the check below instead."""
+look_for = "Which of the other medians is closest to ALL?"
+question = "Which compute unit did ALL pick? What can the table tell you?"
+answer = """\
+  Similar timings are a clue, not proof. ALL lets Core ML use any available \
+  unit, and it may split work across them. The table reports time, not which \
+  unit ran each layer."""

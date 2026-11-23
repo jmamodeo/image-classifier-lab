@@ -1,0 +1,89 @@
+key = "dynamics"
+number = 5
+short = "Epochs"
+title = "Epochs, batches, and overfitting"
+objectives = [
+  "Define an epoch, a batch, and the holdout.",
+  """\
+    Recognize overfitting as training loss falling while validation loss does \
+    not.""",
+  "Say what augmentation and the seed change from one run to the next.",
+]
+
+[[blocks]]
+heading = "An epoch is a pass; a batch is one update"
+paragraphs = [
+  """\
+    An epoch is one pass through the training images. A batch is the group \
+    scored before the next Adam step. The strip below uses the built-in \
+    shapes, the holdout currently in the sidebar, and the batch size currently \
+    in the sidebar. It is the real split, not a sketch: each class keeps at \
+    least one training image and one validation image, and the holdout is the \
+    nearest count to the percentage you set.""",
+  """\
+    ResNet's batch normalization cannot learn from a single image, so the \
+    batch size starts at {min_batch_size} and a leftover batch of one image is \
+    left out of that epoch. Shuffle puts the training images in a new order \
+    every epoch, which keeps a long run of one class from dominating several \
+    updates in a row. The validation images stay in a fixed order.""",
+]
+visual = "epoch_strip"
+
+[[blocks]]
+heading = "The holdout is the check"
+paragraphs = [
+  """\
+    Validation images are scored after every epoch. Their loss and accuracy \
+    never enter the weight update. If they did, a falling validation loss \
+    would just be more training. The two curves share an axis so a gap is \
+    visible. On a handful of held-out images the numbers jump; read the \
+    direction.""",
+  """\
+    Overfitting is the training loss going on down while the validation loss \
+    flattens or rises. The model is getting better at the images it trains on \
+    and not at the ones it doesn't. The sketch shows that shape with invented \
+    y-values, so you know what to look for. It is not a result from this app. \
+    More images, augmentation, fewer epochs, and Transfer mode, which leaves \
+    fewer weights free, are the counters this lab actually has.""",
+]
+visual = "overfit"
+
+[[blocks]]
+heading = "Augmentation and the seed"
+paragraphs = [
+  """\
+    Each time a training image is loaded, it is flipped left-right with \
+    probability {flip_percent} and rotated by up to {rotation_degrees} \
+    degrees. The next epoch loads it again and draws a new flip and angle, so \
+    the model does not see an identical tensor every pass. Validation images, \
+    and any picture you classify later, are only resized and normalized. The \
+    preview in the lab uses its own random numbers, so looking at it does not \
+    change the run.""",
+  """\
+    The seed fixes the initial weights, which images are held out, the shuffle \
+    order, and the augmentation sequence. The same seed on a CPU is meant to \
+    repeat the run. A different seed shows how much the result depended on \
+    those choices. Some GPU kernels can still differ by a small amount.""",
+]
+
+[exercise]
+changed = ["epochs", "augment"]
+instructions = """\
+  Use the built-in shapes. First, change only Epochs to {comparison_epochs} \
+  and train. Then set Epochs back to {default_epochs}, turn Augment training \
+  images off, and train again. Leave the learning rate, the batch size, the \
+  holdout, shuffle, the seed, and Transfer mode at their defaults."""
+look_for = """\
+  On the longer run, whether validation loss keeps moving with training loss \
+  or peels away. On the second run, the preview has no extra draws: every \
+  epoch sees the same resized pixels. The recent-runs table holds both finals. \
+  With so few images, treat the shape of the curves as the lesson."""
+question = """\
+  Validation is scored every epoch. Why must those images stay out of the \
+  weight update?"""
+answer = """\
+  They are the check on images the optimizer did not train on. If the update \
+  is allowed to use them, a falling validation loss no longer means the model \
+  works past the training set. It would be more training data under another \
+  name. This holdout is small, so the check is noisy. Read the direction of \
+  the curve, and treat a perfect score on two images as a demonstration."""

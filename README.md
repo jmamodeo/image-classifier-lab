@@ -152,24 +152,27 @@ One-line help on the sidebar controls still defines the setting under the cursor
 ## Layout
 
 ```
-main.py                  Streamlit entry point
-imagepro/curriculum.py   the eight lessons and their exercises
-imagepro/lesson_ui.py    lesson page, progress, and the run table
-imagepro/diagrams.py     the figures drawn in the lessons
-imagepro/demos.py        the small calculations behind those figures
-imagepro/measure.py      multiply-adds, memory parts, and timing summaries
-imagepro/coreml.py       Core ML export, verification, and inference timing
-imagepro/hardware.py     training and inference availability
-imagepro/data.py         loading, the holdout, augmentation
-imagepro/model.py        ResNet-18 and the parameter counts
-imagepro/training.py     the loop, metrics, prediction
-imagepro/insights.py     a few sentences about the finished curves
-imagepro/plots.py        loss, accuracy, confusion, class shares
-imagepro/examples.py     the built-in shapes
-imagepro/explanations.py one-line help for the sidebar settings
-imagepro/ui.py           the page
-CITATION.cff             citation metadata
-LICENSE                  MIT license
+main.py                   Streamlit entry point
+imagepro/curriculum.py    the eight lessons and their exercises
+imagepro/lesson_ui.py     lesson page, progress, and the run table
+imagepro/diagrams.py      the figures drawn in the lessons
+imagepro/demos.py         the small calculations behind those figures
+imagepro/measure.py       multiply-adds, memory parts, and timing summaries
+imagepro/coreml.py        Core ML export, verification, and inference timing
+imagepro/hardware.py      training and inference availability
+imagepro/data.py          loading, the holdout, augmentation
+imagepro/model.py         ResNet-18 and the parameter counts
+imagepro/training.py      the loop, metrics, prediction
+imagepro/insights.py      a few sentences about the finished curves
+imagepro/plots.py         loss, accuracy, confusion, class shares
+imagepro/examples.py      the built-in shapes
+imagepro/explanations.py  one-line help for the sidebar settings
+imagepro/content/         the lesson and explanation text, as TOML files (CC BY 4.0)
+imagepro/content_files.py reads the content files and fills in the code's numbers
+imagepro/ui.py            the page
+CITATION.cff              citation metadata
+LICENSE                   MIT license (everything outside imagepro/content/)
+LICENSE-CONTENT           CC BY 4.0 (everything in imagepro/content/)
 ```
 
 ## Development
@@ -204,4 +207,9 @@ If you use this software, please cite it. GitHub's "Cite this repository" button
 
 ## License
 
-MIT. Copyright (c) 2025-2026 John Amodeo. See [LICENSE](LICENSE) and [CHANGELOG](CHANGELOG.md).
+Copyright (c) 2025-2026 John Amodeo.
+
+- **Teaching content**: everything in [`imagepro/content/`](imagepro/content/) (the lesson titles, objectives, explanations, exercises and checks, and the help text for the sidebar settings) is under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). See [LICENSE-CONTENT](LICENSE-CONTENT). Reuse is welcome with attribution to John Amodeo and a link to this repository.
+- **Everything else**, including the code, this README, and the screenshots in `docs/`, is under the MIT license. See [LICENSE](LICENSE).
+
+See the [CHANGELOG](CHANGELOG.md) for release history.

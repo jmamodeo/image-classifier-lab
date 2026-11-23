@@ -1,0 +1,91 @@
+key = "learning"
+number = 3
+short = "Learning"
+title = "Loss, gradients, and the learning rate"
+objectives = [
+  "Define the cross-entropy loss for one image, and the mean this app plots.",
+  "Say what a gradient is, and what a gradient step does with it.",
+  "Explain what the learning rate scales, and what Adam changes about the step.",
+]
+
+[[blocks]]
+heading = "The loss scores one image"
+paragraphs = [
+  """\
+    After softmax, the correct class has some share p between 0 and 1. The \
+    loss for that image is the negative natural logarithm of p, the ln from \
+    algebra class. If p is 1, ln(1) is 0, so the loss is 0. If p is 1/e, about \
+    0.37, the loss is 1. If p is tiny, the loss is large. A confident wrong \
+    answer costs more than a near miss.""",
+  """\
+    The chart on the training lab is the mean of this loss over the images \
+    scored in the epoch: add the per-image losses, divide by how many images \
+    were scored. It does not grow just because the epoch was split into more \
+    batches. The network's loss function takes the raw scores and applies the \
+    logarithm of the softmax itself; the value is the same quantity.""",
+]
+visual = "loss"
+formula = '\ell = -\ln(p)'
+
+[[blocks]]
+heading = "A gradient points uphill; the step walks downhill"
+paragraphs = [
+  """\
+    The loss depends on every trainable weight. The gradient is the list of \
+    partial derivatives: how much the loss would change if you nudged that one \
+    weight and held the others still. Gradient descent subtracts a fraction of \
+    the gradient from the weights. The fraction is the learning rate. A small \
+    step usually lowers the loss. A step that is too large can climb out the \
+    other side.""",
+  """\
+    The diagram is a one-number toy, the bowl (weight − 2)², updated by plain \
+    gradient descent. It is not Adam, and it is not the ResNet. It is there so \
+    the step size is visible. Try a small step, a step of 0.50 (which lands on \
+    the bottom in one update from the marked start), and a step of 1.00 (which \
+    swaps sides of the bowl forever).""",
+]
+visual = "descent"
+formula = 'w \leftarrow w - \alpha \nabla \ell(w)'
+
+[[blocks]]
+heading = "This app steps with Adam, once per batch"
+paragraphs = [
+  """\
+    The optimizer is Adam. Adam keeps a running average of the gradient and a \
+    running average of the squared gradient, and it uses both to rescale the \
+    step. The learning rate still multiplies that step. The sidebar does not \
+    change Adam's other settings; the caption under the diagram reads the \
+    library defaults. Weight decay, an extra pull toward zero, is off.""",
+  """\
+    The update runs after each batch, not once per epoch. A very large \
+    learning rate can push a score so far that the loss stops being a finite \
+    number. The run then stops and asks you to lower the learning rate. That \
+    message is the toy diagram's overshoot, showing up in the real training \
+    loop.""",
+]
+visual = "adam"
+
+[exercise]
+changed = ["learning_rate"]
+instructions = """\
+  Choose Built-in shapes and train three times. Change only the learning rate: \
+  first {lowest_learning_rate}, then {default_learning_rate}, then \
+  {highest_learning_rate}. Between runs, put every other setting back to its \
+  default, including Transfer mode, {default_epochs} epochs, and seed \
+  {default_seed}. The recent-runs table keeps the last few results so you can \
+  compare them after the next run replaces the charts."""
+look_for = """\
+  The final training loss of each row, and whether a run stopped early because \
+  the loss was not finite. A smaller step often ends these five epochs at a \
+  higher loss. A larger step can fall faster, or it can diverge. Either \
+  outcome is a result. Write down what this machine did; the shapes are an \
+  easy set, so a large step may still finish."""
+question = """\
+  What does raising the learning rate change about the update, and which two \
+  things does it leave alone?"""
+answer = """\
+  It scales the Adam step taken after each batch. It does not change how many \
+  epochs run, and it does not change how many images are in a batch. Five \
+  epochs at two learning rates are the same number of passes and a different \
+  distance per step. If the loss becomes infinite or NaN, the run stops \
+  because a step left the region where the numbers still make sense."""
