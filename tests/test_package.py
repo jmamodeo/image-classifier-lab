@@ -34,6 +34,13 @@ def test_version_matches_pyproject() -> None:
     assert "John Amodeo" in project["project"]["authors"][0]["name"]
 
 
+def test_repository_and_issues_urls_are_in_pyproject() -> None:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    urls = project["project"]["urls"]
+    assert urls["Repository"] == "https://github.com/jmamodeo/image-classifier-lab"
+    assert urls["Issues"] == "https://github.com/jmamodeo/image-classifier-lab/issues"
+
+
 def test_license_and_changelog_name_the_release() -> None:
     license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
