@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from imagepro.data import split_dataset
-from imagepro.examples import EXAMPLE_IMAGES_PER_CLASS, make_shape_dataset
+from image_classifier_lab.data import split_dataset
+from image_classifier_lab.examples import EXAMPLE_IMAGES_PER_CLASS, make_shape_dataset
 
 
 def test_shapes_are_stable_and_visibly_different() -> None:

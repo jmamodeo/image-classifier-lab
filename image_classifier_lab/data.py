@@ -22,7 +22,7 @@ from torch.utils.data import Dataset
 from torchvision.transforms import functional as F
 from torchvision.transforms.functional import InterpolationMode
 
-from imagepro.errors import DatasetError
+from image_classifier_lab.errors import DatasetError
 
 IMAGE_SIZE = 224
 FLIP_PROBABILITY = 0.5

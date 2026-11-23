@@ -1,7 +1,7 @@
 """Short explanations shown next to the controls.
 
 Each concept has a one-sentence summary for the control's caption and a longer
-body for the panel. The text lives in ``imagepro/content/concepts.toml``, with
+body for the panel. The text lives in ``image_classifier_lab/content/concepts.toml``, with
 one paragraph per list item in ``body``. Numbers that the code also uses are
 written there as placeholders and filled in from those constants so the prose
 cannot drift from the implementation.
@@ -11,9 +11,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from imagepro.content_files import fill, read_toml
-from imagepro.data import FLIP_PROBABILITY, MAX_ROTATION_DEGREES, MIN_IMAGES_PER_CLASS
-from imagepro.training import MIN_BATCH_SIZE
+from image_classifier_lab.content_files import fill, read_toml
+from image_classifier_lab.data import FLIP_PROBABILITY, MAX_ROTATION_DEGREES, MIN_IMAGES_PER_CLASS
+from image_classifier_lab.training import MIN_BATCH_SIZE
 
 
 @dataclass(frozen=True)

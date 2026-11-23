@@ -24,9 +24,9 @@ from dataclasses import dataclass, replace
 import torch
 from torch import nn
 
-from imagepro.data import IMAGE_SIZE
-from imagepro.model import LearningMode, architecture_parameter_counts, create_model
-from imagepro.training import EpochMetrics, TrainResult
+from image_classifier_lab.data import IMAGE_SIZE
+from image_classifier_lab.model import LearningMode, architecture_parameter_counts, create_model
+from image_classifier_lab.training import EpochMetrics, TrainResult
 
 FLOAT32_BYTES = 4
 

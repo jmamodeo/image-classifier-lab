@@ -12,7 +12,7 @@ from collections.abc import Sequence
 
 from PIL import Image
 
-from imagepro.data import IMAGENET_MEAN, IMAGENET_STD
+from image_classifier_lab.data import IMAGENET_MEAN, IMAGENET_STD
 
 # Sobel kernel: responds to a vertical edge. Hand-built, not learned.
 VERTICAL_EDGE: tuple[tuple[float, float, float], ...] = (
@@ -41,7 +41,7 @@ def pixel_pipeline(
 ) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
     """Return the 0–1 values and the ImageNet-normalized values for one pixel.
 
-    Matches :func:`imagepro.data.to_normalized_tensor`: divide by 255, subtract
+    Matches :func:`image_classifier_lab.data.to_normalized_tensor`: divide by 255, subtract
     the ImageNet mean, divide by the ImageNet standard deviation, per channel.
     """
     if len(rgb) != 3:

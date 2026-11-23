@@ -5,8 +5,8 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from imagepro.data import IMAGE_SIZE
-from imagepro.measure import (
+from image_classifier_lab.data import IMAGE_SIZE
+from image_classifier_lab.measure import (
     MEASURE_NOTES,
     adam_bytes,
     adam_step_defaults,
@@ -19,8 +19,8 @@ from imagepro.measure import (
     summarize_timing,
     with_batch,
 )
-from imagepro.model import LearningMode, architecture_parameter_counts
-from imagepro.training import EpochMetrics, TrainResult
+from image_classifier_lab.model import LearningMode, architecture_parameter_counts
+from image_classifier_lab.training import EpochMetrics, TrainResult
 
 
 class Tiny(nn.Module):

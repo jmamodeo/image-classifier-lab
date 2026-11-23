@@ -32,7 +32,7 @@ jobs:
           pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
           pip install -e ".[dev]"
       - name: Import smoke test
-        run: python -c "import imagepro, main"
+        run: python -c "import image_classifier_lab, main"
       - name: Lint
         run: |
           ruff check .

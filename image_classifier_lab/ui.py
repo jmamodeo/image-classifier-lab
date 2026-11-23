@@ -1,4 +1,4 @@
-"""Streamlit interface for ImagePro."""
+"""Streamlit interface for Lessons in AI from an Image Classifier."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ import torch
 from matplotlib.figure import Figure
 from PIL import Image
 
-from imagepro import __version__
-from imagepro.coreml import Export, Precision, export_model
-from imagepro.data import (
+from image_classifier_lab import __version__
+from image_classifier_lab.coreml import Export, Precision, export_model
+from image_classifier_lab.data import (
     MAX_CLASSES,
     MIN_CLASSES,
     LabeledImages,
@@ -27,22 +27,22 @@ from imagepro.data import (
     preview_augmentations,
     split_dataset,
 )
-from imagepro.errors import DatasetError, TrainingError, UserFacingError
-from imagepro.examples import EXAMPLE_IMAGES_PER_CLASS, make_shape_dataset
-from imagepro.explanations import CONCEPTS
-from imagepro.hardware import NEURAL_ENGINE_REASON, detect_hardware
-from imagepro.insights import summarize_training
-from imagepro.lesson_ui import (
+from image_classifier_lab.errors import DatasetError, TrainingError, UserFacingError
+from image_classifier_lab.examples import EXAMPLE_IMAGES_PER_CLASS, make_shape_dataset
+from image_classifier_lab.explanations import CONCEPTS
+from image_classifier_lab.hardware import NEURAL_ENGINE_REASON, detect_hardware
+from image_classifier_lab.insights import summarize_training
+from image_classifier_lab.lesson_ui import (
     LabSnapshot,
     append_run,
     render_curriculum,
     render_run_log,
     render_verification,
 )
-from imagepro.measure import format_bytes, make_run_record, summarize_timing
-from imagepro.model import LearningMode, architecture_parameter_counts
-from imagepro.plots import plot_confusion, plot_history, plot_probabilities
-from imagepro.training import (
+from image_classifier_lab.measure import format_bytes, make_run_record, summarize_timing
+from image_classifier_lab.model import LearningMode, architecture_parameter_counts
+from image_classifier_lab.plots import plot_confusion, plot_history, plot_probabilities
+from image_classifier_lab.training import (
     DEFAULT_AUGMENT,
     DEFAULT_BATCH_SIZE,
     DEFAULT_EPOCHS,
@@ -197,7 +197,7 @@ def _render_workspace(settings: Settings) -> LabSnapshot:
         render_run_log()
 
     st.divider()
-    st.caption(f"ImagePro {__version__} · John Amodeo · MIT License")
+    st.caption(f"{APP_TITLE} {__version__} · John Amodeo · MIT License")
     return LabSnapshot(
         class_count=class_count,
         source=str(source),
@@ -758,7 +758,7 @@ def _render_export(artifact: Artifact, precision: Precision, reason: str | None)
         st.download_button(
             "Download Core ML package",
             exported.zip_bytes,
-            file_name="imagepro-classifier.mlpackage.zip",
+            file_name="image-classifier-lab.mlpackage.zip",
             mime="application/zip",
         )
         st.write(f"Package size ({precision}): {format_bytes(exported.size_bytes)}")

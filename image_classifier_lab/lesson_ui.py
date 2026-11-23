@@ -1,4 +1,4 @@
-"""Draw the curriculum. The training lab stays in ``imagepro.ui``."""
+"""Draw the curriculum. The training lab stays in ``image_classifier_lab.ui``."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from matplotlib.figure import Figure
 from PIL import Image
 from torch import nn
 
-from imagepro.coreml import (
+from image_classifier_lab.coreml import (
     COMPUTE_UNITS,
     MEASURE_RUNS,
     WARMUP_RUNS,
@@ -21,7 +21,7 @@ from imagepro.coreml import (
     Precision,
     benchmark_export,
 )
-from imagepro.curriculum import (
+from image_classifier_lab.curriculum import (
     LAB_PAGE,
     SECTION_BY_KEY,
     SECTIONS,
@@ -31,7 +31,7 @@ from imagepro.curriculum import (
     keep_sentence,
     visual_names,
 )
-from imagepro.data import (
+from image_classifier_lab.data import (
     IMAGE_SIZE,
     IMAGENET_MEAN,
     IMAGENET_STD,
@@ -40,7 +40,7 @@ from imagepro.data import (
     prepare_image,
     split_dataset,
 )
-from imagepro.demos import (
+from image_classifier_lab.demos import (
     NEURON_BIAS,
     NEURON_INPUTS,
     NEURON_WEIGHTS,
@@ -54,7 +54,7 @@ from imagepro.demos import (
     pixel_pipeline,
     softmax,
 )
-from imagepro.diagrams import (
+from image_classifier_lab.diagrams import (
     conv1_feature_maps,
     display_filters,
     novel_conv1_weight,
@@ -76,9 +76,9 @@ from imagepro.diagrams import (
     plot_softmax,
     varying_indexes,
 )
-from imagepro.errors import TrainingError
-from imagepro.examples import make_shape_dataset
-from imagepro.measure import (
+from image_classifier_lab.errors import TrainingError
+from image_classifier_lab.examples import make_shape_dataset
+from image_classifier_lab.measure import (
     MEASURE_NOTES,
     Analysis,
     RunRecord,
@@ -89,9 +89,9 @@ from imagepro.measure import (
     group_label,
     resnet18_structure,
 )
-from imagepro.model import LearningMode, architecture_parameter_counts
-from imagepro.plots import VAL_COLOR, plot_confusion
-from imagepro.training import TrainResult, resolve_batching
+from image_classifier_lab.model import LearningMode, architecture_parameter_counts
+from image_classifier_lab.plots import VAL_COLOR, plot_confusion
+from image_classifier_lab.training import TrainResult, resolve_batching
 
 PAGE_KEY = "curriculum_page"
 VISITED_KEY = "curriculum_visited"

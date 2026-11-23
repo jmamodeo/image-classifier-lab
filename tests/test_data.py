@@ -9,7 +9,7 @@ import torch
 from PIL import Image, ImageDraw
 from torchvision.transforms import functional as F
 
-from imagepro.data import (
+from image_classifier_lab.data import (
     ImageListDataset,
     LabeledImages,
     apply_augmentation,
@@ -23,7 +23,7 @@ from imagepro.data import (
     split_dataset,
     validation_count,
 )
-from imagepro.errors import DatasetError
+from image_classifier_lab.errors import DatasetError
 
 
 def _swatch(red: int) -> Image.Image:
@@ -133,7 +133,7 @@ def test_dataset_augments_on_every_read_and_validation_does_not(
         calls["n"] += 1
         return image
 
-    monkeypatch.setattr("imagepro.data.apply_augmentation", fake)
+    monkeypatch.setattr("image_classifier_lab.data.apply_augmentation", fake)
     image = _swatch(1)
     training = ImageListDataset(
         [image], [0], augment=True, generator=torch.Generator().manual_seed(0)
@@ -145,7 +145,7 @@ def test_dataset_augments_on_every_read_and_validation_does_not(
     def forbidden(*args: object, **kwargs: object) -> Image.Image:
         raise AssertionError("validation must not augment")
 
-    monkeypatch.setattr("imagepro.data.apply_augmentation", forbidden)
+    monkeypatch.setattr("image_classifier_lab.data.apply_augmentation", forbidden)
     validation = ImageListDataset([image], [3], augment=False)
     first, label = validation[0]
     second, _label = validation[0]
@@ -187,7 +187,7 @@ def test_preview_is_seeded_and_does_not_touch_the_global_rng() -> None:
 
 
 def test_model_input_uses_imagenet_normalization() -> None:
-    from imagepro.data import IMAGENET_MEAN, IMAGENET_STD
+    from image_classifier_lab.data import IMAGENET_MEAN, IMAGENET_STD
 
     tensor = image_to_model_input(Image.new("RGB", (12, 12), (128, 128, 128)))
     assert tensor.shape == (1, 3, 224, 224)

@@ -5,12 +5,12 @@ from __future__ import annotations
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from imagepro import lesson_ui
-from imagepro.curriculum import LAB_PAGE, SECTIONS
-from imagepro.lesson_ui import DONE_KEY, PAGE_KEY, RUN_LOG_KEY, LabSnapshot
-from imagepro.measure import RunRecord
-from imagepro.model import LearningMode, create_model
-from imagepro.training import EpochMetrics, TrainResult
+from image_classifier_lab import lesson_ui
+from image_classifier_lab.curriculum import LAB_PAGE, SECTIONS
+from image_classifier_lab.lesson_ui import DONE_KEY, PAGE_KEY, RUN_LOG_KEY, LabSnapshot
+from image_classifier_lab.measure import RunRecord
+from image_classifier_lab.model import LearningMode, create_model
+from image_classifier_lab.training import EpochMetrics, TrainResult
 
 TIMEOUT = 120
 CLASS_NAMES = ("circle", "square", "triangle")
@@ -80,13 +80,13 @@ def record(mode: str = "Novel", peak: int | None = None) -> RunRecord:
 
 
 def curriculum_script(lab):  # noqa: ANN001
-    from imagepro.lesson_ui import render_curriculum
+    from image_classifier_lab.lesson_ui import render_curriculum
 
     render_curriculum(lab)
 
 
 def run_log_script() -> None:
-    from imagepro.lesson_ui import render_run_log
+    from image_classifier_lab.lesson_ui import render_run_log
 
     render_run_log()
 

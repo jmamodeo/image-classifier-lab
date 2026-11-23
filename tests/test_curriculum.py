@@ -5,7 +5,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import torch
 
-from imagepro.curriculum import (
+from image_classifier_lab.curriculum import (
     COMPARISON_BATCH,
     COMPARISON_EPOCHS,
     LAB_PAGE,
@@ -13,9 +13,9 @@ from imagepro.curriculum import (
     keep_sentence,
     visual_names,
 )
-from imagepro.data import IMAGE_SIZE
-from imagepro.demos import VERTICAL_EDGE
-from imagepro.diagrams import (
+from image_classifier_lab.data import IMAGE_SIZE
+from image_classifier_lab.demos import VERTICAL_EDGE
+from image_classifier_lab.diagrams import (
     conv1_feature_maps,
     display_filters,
     novel_conv1_weight,
@@ -33,9 +33,9 @@ from imagepro.diagrams import (
     plot_residual,
     plot_softmax,
 )
-from imagepro.examples import make_shape_dataset
-from imagepro.lesson_ui import VISUAL_RENDERERS, renderers_cover_the_lessons
-from imagepro.training import (
+from image_classifier_lab.examples import make_shape_dataset
+from image_classifier_lab.lesson_ui import VISUAL_RENDERERS, renderers_cover_the_lessons
+from image_classifier_lab.training import (
     DEFAULT_BATCH_SIZE,
     DEFAULT_EPOCHS,
     MAX_BATCH_SIZE,

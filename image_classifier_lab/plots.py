@@ -7,7 +7,7 @@ from collections.abc import Sequence
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
-from imagepro.training import EpochMetrics
+from image_classifier_lab.training import EpochMetrics
 
 TRAIN_COLOR = "#1F4E79"
 VAL_COLOR = "#C46B2C"

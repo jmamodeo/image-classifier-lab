@@ -14,7 +14,7 @@ import torch
 from PIL import Image
 from torch import nn
 
-from imagepro.coreml import (
+from image_classifier_lab.coreml import (
     COMPUTE_UNITS,
     PACKAGE_NAME,
     Export,
@@ -28,9 +28,14 @@ from imagepro.coreml import (
     package_size,
     verify_model,
 )
-from imagepro.data import IMAGE_SIZE, image_to_model_input, prepare_image, to_normalized_tensor
-from imagepro.hardware import detect_hardware
-from imagepro.model import LearningMode, create_model
+from image_classifier_lab.data import (
+    IMAGE_SIZE,
+    image_to_model_input,
+    prepare_image,
+    to_normalized_tensor,
+)
+from image_classifier_lab.hardware import detect_hardware
+from image_classifier_lab.model import LearningMode, create_model
 
 
 def test_conversion_packages_labels_image_and_precisions(tmp_path: Path) -> None:
@@ -151,9 +156,9 @@ def test_export_preserves_package_when_verification_fails(monkeypatch: pytest.Mo
     def verify(path, model, names, images):
         raise RuntimeError("Could not compare the validation images")
 
-    monkeypatch.setattr("imagepro.coreml.convert_model", convert)
-    monkeypatch.setattr("imagepro.coreml.coreml_prediction_reason", lambda: None)
-    monkeypatch.setattr("imagepro.coreml.verify_model", verify)
+    monkeypatch.setattr("image_classifier_lab.coreml.convert_model", convert)
+    monkeypatch.setattr("image_classifier_lab.coreml.coreml_prediction_reason", lambda: None)
+    monkeypatch.setattr("image_classifier_lab.coreml.verify_model", verify)
     exported = export_model(nn.Identity(), ("a", "b"), (), "float16")
     assert exported.verification is None
     assert exported.verification_error == "Could not compare the validation images"
@@ -207,8 +212,8 @@ def test_verification_uses_identical_pixels_and_label_order(
         models=SimpleNamespace(MLModel=lambda *args, **kwargs: Predictor()),
         ComputeUnit=SimpleNamespace(CPU_ONLY="cpu"),
     )
-    monkeypatch.setattr("imagepro.coreml.coreml_prediction_reason", lambda: None)
-    monkeypatch.setattr("imagepro.coreml._coremltools", lambda: fake)
+    monkeypatch.setattr("image_classifier_lab.coreml.coreml_prediction_reason", lambda: None)
+    monkeypatch.setattr("image_classifier_lab.coreml._coremltools", lambda: fake)
     model = Model().train()
     result = verify_model(Path("unused.mlpackage"), model, ("first", "second"), (image,))
     assert result.max_abs_difference == 0
@@ -251,7 +256,7 @@ def test_benchmark_export_runs_only_selected_backends(monkeypatch: pytest.Monkey
         units.append(compute_units)
         return SimpleNamespace(predict=lambda _: None)
 
-    monkeypatch.setattr("imagepro.coreml.coreml_prediction_reason", lambda: None)
+    monkeypatch.setattr("image_classifier_lab.coreml.coreml_prediction_reason", lambda: None)
     monkeypatch.setattr(ct.models, "MLModel", load_model)
     timings = benchmark_export(
         exported,
@@ -308,7 +313,7 @@ def test_pytorch_gpu_benchmark_synchronizes_selected_device(
 
     monkeypatch.setattr(f"torch.{device}.synchronize", lambda: events.append("sync"))
     monkeypatch.setattr(
-        "imagepro.coreml.image_to_model_input",
+        "image_classifier_lab.coreml.image_to_model_input",
         lambda image: SimpleNamespace(to=lambda device: f"batch on {device}"),
     )
     result = benchmark_export(

@@ -17,7 +17,7 @@ from matplotlib.patches import FancyBboxPatch, Rectangle
 from PIL import Image
 from torch import nn
 
-from imagepro.demos import (
+from image_classifier_lab.demos import (
     VERTICAL_EDGE,
     convolve_at,
     convolve_valid,
@@ -27,8 +27,8 @@ from imagepro.demos import (
     softmax,
     toy_loss,
 )
-from imagepro.model import LearningMode, create_model
-from imagepro.plots import QUIET_COLOR, TRAIN_COLOR, VAL_COLOR
+from image_classifier_lab.model import LearningMode, create_model
+from image_classifier_lab.plots import QUIET_COLOR, TRAIN_COLOR, VAL_COLOR
 
 _EDGE = "#1F4E79"
 _INK = "#17202A"

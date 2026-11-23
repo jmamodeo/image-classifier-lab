@@ -11,7 +11,7 @@ import random
 
 from PIL import Image, ImageDraw
 
-from imagepro.data import IMAGE_SIZE, LabeledImages
+from image_classifier_lab.data import IMAGE_SIZE, LabeledImages
 
 EXAMPLE_IMAGES_PER_CLASS = 8
 _EXAMPLE_SEED = 0

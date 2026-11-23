@@ -18,9 +18,9 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from torchvision.models import ResNet18_Weights
 
-from imagepro.data import SplitData, build_datasets
-from imagepro.errors import TrainingError
-from imagepro.model import (
+from image_classifier_lab.data import SplitData, build_datasets
+from image_classifier_lab.errors import TrainingError
+from image_classifier_lab.model import (
     AUTO,
     LearningMode,
     _AutoWeights,
@@ -105,7 +105,7 @@ def set_seed(seed: int) -> None:
 
     The split, the augmentation generator, and the shuffle generator each
     carry their own seed as well. Call this immediately before
-    :func:`imagepro.model.create_model` so the random initial weights repeat.
+    :func:`image_classifier_lab.model.create_model` so the random initial weights repeat.
     """
     if isinstance(seed, bool) or not isinstance(seed, int) or seed < 0:
         raise TrainingError("Seed must be a non-negative integer.")

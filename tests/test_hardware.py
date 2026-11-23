@@ -2,7 +2,7 @@
 
 import pytest
 
-from imagepro.hardware import NEURAL_ENGINE_REASON, detect_hardware
+from image_classifier_lab.hardware import NEURAL_ENGINE_REASON, detect_hardware
 
 
 @pytest.mark.parametrize(

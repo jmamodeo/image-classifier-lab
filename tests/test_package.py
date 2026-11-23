@@ -8,11 +8,11 @@ from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
 
-import imagepro
-from imagepro.curriculum import SECTIONS
-from imagepro.data import MAX_ROTATION_DEGREES
-from imagepro.explanations import CONCEPT_ORDER, CONCEPTS
-from imagepro.training import DEFAULT_LEARNING_RATE, LEARNING_RATES, MIN_BATCH_SIZE
+import image_classifier_lab
+from image_classifier_lab.curriculum import SECTIONS
+from image_classifier_lab.data import MAX_ROTATION_DEGREES
+from image_classifier_lab.explanations import CONCEPT_ORDER, CONCEPTS
+from image_classifier_lab.training import DEFAULT_LEARNING_RATE, LEARNING_RATES, MIN_BATCH_SIZE
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_CONCEPTS = {
@@ -30,7 +30,7 @@ REQUIRED_CONCEPTS = {
 
 def test_version_matches_pyproject() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    assert project["project"]["version"] == imagepro.__version__
+    assert project["project"]["version"] == image_classifier_lab.__version__
     assert "John Amodeo" in project["project"]["authors"][0]["name"]
 
 
@@ -40,7 +40,7 @@ def test_license_and_changelog_name_the_release() -> None:
     assert "Copyright (c) 2025-2026 John Amodeo" in license_text
     assert "Permission is hereby granted" in license_text
     assert "## 1.0.0" in changelog
-    assert f"## {imagepro.__version__}" in changelog
+    assert f"## {image_classifier_lab.__version__}" in changelog
     assert "Novel mode" in changelog
     assert "Augmentation" in changelog
 

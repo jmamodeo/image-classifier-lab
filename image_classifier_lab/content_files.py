@@ -1,4 +1,4 @@
-"""Read the teaching text that ships in ``imagepro/content``.
+"""Read the teaching text that ships in ``image_classifier_lab/content``.
 
 The lessons and the control explanations are TOML files inside the package.
 Numbers the code also uses appear in the text as named placeholders such as
@@ -15,11 +15,11 @@ from importlib.resources.abc import Traversable
 from string import Formatter
 from typing import Any
 
-CONTENT_DIR: Traversable = files("imagepro").joinpath("content")
+CONTENT_DIR: Traversable = files("image_classifier_lab").joinpath("content")
 
 
 def read_toml(*parts: str) -> dict[str, Any]:
-    """Parse one TOML file under ``imagepro/content``."""
+    """Parse one TOML file under ``image_classifier_lab/content``."""
     return tomllib.loads(CONTENT_DIR.joinpath(*parts).read_text(encoding="utf-8"))
 
 

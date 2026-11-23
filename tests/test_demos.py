@@ -7,8 +7,8 @@ import math
 import pytest
 from PIL import Image
 
-from imagepro.data import to_normalized_tensor
-from imagepro.demos import (
+from image_classifier_lab.data import to_normalized_tensor
+from image_classifier_lab.demos import (
     NEURON_BIAS,
     NEURON_INPUTS,
     NEURON_WEIGHTS,
@@ -27,7 +27,7 @@ from imagepro.demos import (
     softmax,
     toy_loss,
 )
-from imagepro.examples import make_shape_dataset
+from image_classifier_lab.examples import make_shape_dataset
 
 
 def test_pixel_pipeline_matches_the_tensor_the_model_sees() -> None:
