@@ -197,7 +197,7 @@ def _render_workspace(settings: Settings) -> LabSnapshot:
         render_run_log()
 
     st.divider()
-    st.caption(f"{APP_TITLE} {__version__} · John Amodeo · MIT License")
+    st.caption(f"{APP_TITLE} {__version__} · John Amodeo · MIT (code) · CC BY 4.0 (lessons)")
     return LabSnapshot(
         class_count=class_count,
         source=str(source),
