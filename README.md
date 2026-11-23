@@ -169,7 +169,8 @@ imagepro/examples.py     the built-in shapes
 imagepro/explanations.py one-line help for the sidebar settings
 imagepro/ui.py           the page
 CITATION.cff             citation metadata
-LICENSE                  MIT license
+LICENSE                  MIT license (code)
+LICENSE-CONTENT          CC BY 4.0 (curriculum and teaching content)
 ```
 
 ## Development
@@ -204,4 +205,9 @@ If you use this software, please cite it. GitHub's "Cite this repository" button
 
 ## License
 
-MIT. Copyright (c) 2025-2026 John Amodeo. See [LICENSE](LICENSE) and [CHANGELOG](CHANGELOG.md).
+Copyright (c) 2025-2026 John Amodeo.
+
+- **Code** is under the MIT license. See [LICENSE](LICENSE).
+- **Curriculum and teaching content** (the lesson text, objectives, exercises and explanations, the curriculum section of this README, and the screenshots in `docs/`) is under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). See [LICENSE-CONTENT](LICENSE-CONTENT). Reuse is welcome with attribution to John Amodeo and a link to this repository.
+
+See the [CHANGELOG](CHANGELOG.md) for release history.

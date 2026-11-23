@@ -3,13 +3,17 @@ message: "If you use this software, please cite it as below."
 type: software
 title: "Lessons in AI from an Image Classifier"
 abstract: >-
-  A Streamlit lab that walks through how an image classifier learns, from
-  pixels and loss to evaluation and the hardware that runs the arithmetic.
-  Upload two or more labeled image sets, or use the built-in shapes, and
-  train a ResNet-18 from ImageNet weights or from scratch.
+  An eight-lesson curriculum and a Streamlit lab that walk through how an
+  image classifier learns, from pixels and loss to evaluation and the
+  hardware that runs the arithmetic. Each lesson states its objectives,
+  explains the idea, and ends with exercises. Upload two or more labeled
+  image sets, or use the built-in shapes, and train a ResNet-18 from
+  ImageNet weights or from scratch.
 version: 1.1.1
 date-released: 2026-11-19
-license: MIT
+license:
+  - MIT
+  - CC-BY-4.0
 authors:
   - family-names: Amodeo
     given-names: John
