@@ -114,8 +114,9 @@ def test_hardware_exercises_match_the_panel_and_measurements() -> None:
     hardware = SECTIONS[-1]
     training, neural_engine, precision, all_units = hardware.exercise_items()
     assert "Train s/epoch" in training[1].look_for
-    assert all(unit in neural_engine[1].instructions for unit in ("CPU_AND_NE", "CPU_AND_GPU"))
-    assert "CPU_ONLY" in neural_engine[1].instructions
+    assert all(
+        device in neural_engine[1].instructions for device in ("CPU", "GPU", "Neural Engine")
+    )
     assert precision[1].changed == ("precision",)
     assert "top-1 agreement" in precision[1].answer
     assert "median latency" in precision[1].look_for

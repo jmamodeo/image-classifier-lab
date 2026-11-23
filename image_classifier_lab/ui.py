@@ -2,20 +2,24 @@
 
 from __future__ import annotations
 
+import html
 import urllib.error
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
 import streamlit as st
 import torch
 from matplotlib.figure import Figure
-from PIL import Image
+from PIL import Image, ImageOps
 
 from image_classifier_lab import __version__
 from image_classifier_lab.coreml import Export, Precision, export_model
 from image_classifier_lab.data import (
     MAX_CLASSES,
     MIN_CLASSES,
+    MIN_IMAGES_PER_CLASS,
     LabeledImages,
     SplitData,
     augmentation_demo_index,
@@ -28,7 +32,12 @@ from image_classifier_lab.data import (
     split_dataset,
 )
 from image_classifier_lab.errors import DatasetError, TrainingError, UserFacingError
-from image_classifier_lab.examples import EXAMPLE_IMAGES_PER_CLASS, make_shape_dataset
+from image_classifier_lab.examples import (
+    EXAMPLE_IMAGES_PER_CLASS,
+    PUBLIC_IMAGES_PER_CLASS,
+    make_cifar_dataset,
+    make_shape_dataset,
+)
 from image_classifier_lab.explanations import CONCEPTS
 from image_classifier_lab.hardware import NEURAL_ENGINE_REASON, detect_hardware
 from image_classifier_lab.insights import summarize_training
@@ -62,11 +71,26 @@ from image_classifier_lab.training import (
 )
 
 PREVIEW_COUNT = 4
+THUMBNAIL_LIMIT = 10
+THUMBNAIL_PIXELS = 128
+THUMBNAIL_WIDTH = 60
+CARD_COLUMNS = (2, 3)
+RESULT_TABS = ("Training curves", "Confusion matrix", "Per-class accuracy")
 UPLOAD_TYPES = ["png", "jpg", "jpeg", "webp", "bmp"]
+SOURCE_LABELS = {
+    "shapes": "Built-in shapes",
+    "public": "Built-in images",
+    "upload": "Upload images",
+}
 _DOWNLOAD_MESSAGE = (
     "Could not download the ImageNet weights for transfer mode. Check the network "
     "connection, or switch to Novel mode, which starts from random weights and does "
     "not download anything."
+)
+_GPU_UNAVAILABLE_HELP = "No compatible GPU is available to this app."
+_INFERENCE_HELP = (
+    "Inference uses a trained model to make predictions. Select devices to compare "
+    "their prediction speed in Lesson 8."
 )
 
 
@@ -111,6 +135,327 @@ class Artifact:
 
 
 APP_TITLE = "Lessons in AI from an Image Classifier"
+WELCOME_TITLE = "Welcome to Image Classifier Lab"
+_APP_ICON = (
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' "
+    "fill='none' stroke='white' stroke-width='2' stroke-linecap='round' "
+    "stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='3'/%3E"
+    "%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-5-5L5 21'/%3E%3C/svg%3E"
+)
+# The classifier is drawn as an app window: keyed containers get an ``st-key-`` class.
+_STYLES = f"""
+<style>
+h1#welcome-to-image-classifier-lab {{
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 700;
+}}
+.st-key-hardware-backward,
+.st-key-hardware-forward,
+.st-key-hardware-precision {{
+    gap: 0.4rem;
+}}
+.st-key-hardware-backward [data-testid="stWidgetLabel"] p,
+.st-key-hardware-precision [data-testid="stWidgetLabel"] p {{
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.6;
+}}
+.st-key-hardware-backward [role="radiogroup"] {{
+    min-height: 0;
+}}
+.st-key-hardware-forward,
+.st-key-hardware-precision {{
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(23, 32, 42, 0.12);
+}}
+.st-key-hardware-training-gpu {{
+    margin-top: -0.4rem;
+}}
+.st-key-hardware-training-gpu,
+.st-key-hardware-inference-gpu,
+.st-key-hardware-inference-neural {{
+    position: relative;
+    gap: 0;
+}}
+.st-key-hardware-training-gpu [data-testid="stElementContainer"]:has(.hardware-unavailable-help),
+.st-key-hardware-inference-gpu [data-testid="stElementContainer"]:has(.hardware-unavailable-help),
+.st-key-hardware-inference-neural
+    [data-testid="stElementContainer"]:has(.hardware-unavailable-help) {{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4rem;
+    height: 1.6rem;
+    z-index: 1;
+}}
+.st-key-hardware-inference-neural
+    [data-testid="stElementContainer"]:has(.hardware-unavailable-help) {{
+    width: 11rem;
+}}
+.hardware-unavailable-help {{
+    display: block;
+    position: relative;
+    width: 4rem;
+    height: 1.6rem;
+    cursor: help;
+}}
+.st-key-hardware-inference-neural .hardware-unavailable-help {{
+    width: 11rem;
+}}
+.hardware-help {{
+    display: inline-flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    margin-left: 0.125rem;
+    vertical-align: middle;
+    cursor: help;
+}}
+.st-key-hardware-backward [data-testid="stTooltipIcon"],
+.st-key-hardware-precision [data-testid="stTooltipIcon"],
+.st-key-hardware-inference-neural [data-testid="stTooltipIcon"],
+.hardware-help {{
+    color: #7d858a;
+}}
+.st-key-hardware-backward [data-testid="stTooltipIcon"] svg,
+.st-key-hardware-precision [data-testid="stTooltipIcon"] svg,
+.st-key-hardware-inference-neural [data-testid="stTooltipIcon"] svg,
+.hardware-help svg {{
+    stroke: currentColor;
+    stroke-width: 2px;
+}}
+.hardware-tooltip {{
+    visibility: hidden;
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    left: 0;
+    z-index: 20;
+    width: 14rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    background: #f1f3f5;
+    color: #17202a;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.6;
+    pointer-events: none;
+}}
+.hardware-help .hardware-tooltip {{
+    left: -5rem;
+}}
+.hardware-help:hover .hardware-tooltip,
+.hardware-help:focus .hardware-tooltip,
+.hardware-unavailable-help:hover .hardware-tooltip,
+.hardware-unavailable-help:focus .hardware-tooltip {{
+    visibility: visible;
+}}
+.st-key-classifier-app {{
+    gap: 0;
+    margin-top: 0.75rem;
+    border: 1px solid rgba(23, 32, 42, 0.14);
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(23, 32, 42, 0.05), 0 22px 48px -22px rgba(23, 32, 42, 0.35);
+}}
+.st-key-app-titlebar {{
+    padding: 0.7rem 1.25rem;
+    border-radius: 13px 13px 0 0;
+    background: linear-gradient(120deg, #10273d 0%, #1f4e79 62%, #2f6ea5 100%);
+}}
+.st-key-app-titlebar h2 {{
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0;
+    padding: 0;
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}}
+.st-key-app-titlebar h2::before {{
+    content: "";
+    flex: none;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 0.55rem;
+    background: rgba(255, 255, 255, 0.14) url("{_APP_ICON}") center / 1.15rem no-repeat;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}}
+.ic-chip {{
+    display: flex;
+    justify-content: flex-end;
+}}
+.ic-chip span {{
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.13);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: #e6eef6;
+    font-size: 0.78rem;
+    white-space: nowrap;
+}}
+.st-key-app-toolbar,
+.st-key-app-data,
+.st-key-app-train,
+.st-key-app-results,
+.st-key-app-predict,
+.st-key-app-export {{
+    padding: 1rem 1.25rem 1.15rem;
+    border-top: 1px solid rgba(23, 32, 42, 0.09);
+}}
+.st-key-app-toolbar {{
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+    border-top: none;
+    background: rgba(23, 32, 42, 0.03);
+}}
+.st-key-app-statusbar {{
+    padding: 0.45rem 1.25rem;
+    border-top: 1px solid rgba(23, 32, 42, 0.09);
+    border-radius: 0 0 13px 13px;
+    background: rgba(23, 32, 42, 0.04);
+}}
+/* Streamlit pulls markdown up 1rem to absorb a paragraph margin these bands don't have. */
+.st-key-app-titlebar [data-testid="stMarkdownContainer"],
+.st-key-app-statusbar [data-testid="stMarkdownContainer"] {{
+    margin-bottom: 0;
+}}
+.ic-head {{
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}}
+.ic-label {{
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    opacity: 0.62;
+}}
+.ic-meta {{
+    font-size: 0.8rem;
+    opacity: 0.62;
+}}
+.ic-statusbar {{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    font-size: 0.76rem;
+    opacity: 0.78;
+}}
+.ic-status::before {{
+    content: "";
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: 0.4rem;
+    border-radius: 50%;
+    background: #9aa5b1;
+}}
+.ic-status-ready::before {{
+    background: #2f9e44;
+}}
+.ic-status-stale::before {{
+    background: #e8590c;
+}}
+.ic-empty {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: {THUMBNAIL_WIDTH}px;
+    border: 1.5px dashed rgba(23, 32, 42, 0.2);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    opacity: 0.7;
+}}
+.st-key-source [role="radiogroup"] {{
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 10px;
+    background: rgba(23, 32, 42, 0.08);
+}}
+.st-key-source [role="radiogroup"] label {{
+    margin: 0;
+    padding: 0.3rem 0.95rem;
+    border-radius: 8px;
+    cursor: pointer;
+}}
+/* The radio dot: the label's first div in older Streamlit, nested a level deeper in newer. */
+.st-key-source [role="radiogroup"] label > div:first-child,
+.st-key-source [role="radiogroup"] label > div > div:not([data-testid="stMarkdownContainer"]) {{
+    display: none;
+}}
+.st-key-source [role="radiogroup"] label:has(input:checked) {{
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(23, 32, 42, 0.16);
+}}
+.st-key-source [role="radiogroup"] label:has(input:checked) p {{
+    color: #1f4e79;
+    font-weight: 600;
+}}
+.st-key-source [role="radiogroup"] label:has(input:focus-visible) {{
+    outline: 2px solid #1f4e79;
+    outline-offset: 1px;
+}}
+.st-key-app-data img {{
+    border-radius: 6px;
+}}
+[class*="st-key-class_card_"] [data-testid="stFileUploaderDropzoneInstructions"] {{
+    display: none;
+}}
+[class*="st-key-remove_"] [data-testid="stButton"],
+.st-key-train_model [data-testid="stButton"] {{
+    display: flex;
+    justify-content: flex-end;
+}}
+/* Newer Streamlit shrinks a button's container to fit it, so push the container right too. */
+[class*="st-key-remove_"],
+.st-key-train_model {{
+    margin-left: auto;
+}}
+/* A proportional column squeezes the train button's label; give it a fixed width instead. */
+@media (min-width: 641px) {{
+    .st-key-app-train [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:first-child {{
+        flex: 1 1 0;
+        min-width: 0;
+    }}
+    .st-key-app-train [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child {{
+        flex: 0 0 9.5rem;
+        width: 9.5rem;
+    }}
+}}
+.st-key-prediction-result strong {{
+    font-size: 1.5rem;
+}}
+/* Metric tiles are narrow inside the frame: wrap labels instead of truncating them. */
+.st-key-app-results [data-testid="stMetricLabel"] {{
+    min-height: 2.5em;
+    align-items: flex-start;
+}}
+.st-key-app-results [data-testid="stMetricLabel"] * {{
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    line-height: 1.25;
+}}
+.st-key-app-results [data-testid="stMetricValue"] {{
+    font-size: 1.65rem;
+    font-weight: 600;
+}}
+/* Older Streamlit prints the table's row numbers; newer versions already hide them. */
+.st-key-app-results [data-testid="stTableStyledTable"] thead th.blank,
+.st-key-app-results [data-testid="stTableStyledTable"] tbody th {{
+    display: none;
+}}
+</style>
+"""
 
 
 def main() -> None:
@@ -122,82 +467,74 @@ def main() -> None:
     )
     _ensure_state()
     settings = _sidebar()
-    st.title(APP_TITLE)
+    st.markdown(_STYLES, unsafe_allow_html=True)
+    st.title(WELCOME_TITLE)
     st.caption(
-        "Eight lessons on how this image classifier learns, and a training lab that "
-        "stays on the page. The exercises name the settings "
+        "Eight expandable lessons on how this image classifier learns, followed by "
+        "the Image Classifier itself. The exercises name the settings "
         "to change. Transfer mode starts from ImageNet and trains a new final layer. "
         "Novel mode trains every layer from random weights."
     )
     lesson_slot = st.container()
-    lab_slot = st.container()
-    with lab_slot:
-        snapshot = _render_workspace(settings)
+    snapshot = _render_workspace(settings)
     with lesson_slot:
         render_curriculum(snapshot)
 
 
 def _render_workspace(settings: Settings) -> LabSnapshot:
-    """The images, the run, and the prediction. Always on the page, under the lesson."""
+    """The classifier, framed as an app window, with its teaching notes below the frame."""
     st.markdown('<div id="training-lab"></div>', unsafe_allow_html=True)
-    st.subheader("Training lab")
-    st.subheader("Images")
-    source = st.radio(
-        "Where the images come from",
-        options=["upload", "example"],
-        format_func=lambda value: "Upload images" if value == "upload" else "Built-in shapes",
-        horizontal=True,
-        key="source",
-    )
-    groups, read_error = _load_groups(source)
-    if read_error is not None:
-        st.error(read_error)
+    with st.container(key="classifier-app"):
+        _render_titlebar(settings)
+        with _section("app-toolbar"):
+            source = _source_picker()
+        with _section("app-data"):
+            groups = _render_training_data(source)
 
-    class_count = len(groups) if groups is not None else _slot_count(source)
-    _render_mode_cards(class_count, settings.mode)
+        class_count = len(groups) if groups is not None else _slot_count(source)
+        split: SplitData | None = None
+        problem: tuple[str, str] | None = None
+        if groups is not None:
+            split, problem = _try_split(groups, settings)
+        batch_note = _batch_note(split, settings) if split is not None else None
+        if isinstance(batch_note, str) and batch_note.startswith("error:"):
+            problem = ("error", batch_note.removeprefix("error:"))
+            split = None
+            batch_note = None
 
-    split: SplitData | None = None
-    if groups is not None:
-        split, problem = _try_split(groups, settings)
-        if problem is not None:
-            level, message = problem
-            if level == "info":
-                st.info(message)
-            else:
-                st.error(message)
-        elif split is not None:
-            _render_preview(split, settings)
+        with _section("app-train"):
+            status, action = st.columns((3, 1), vertical_alignment="center")
+            with status:
+                _render_train_status(groups, split, problem)
+            with action:
+                clicked = st.button(
+                    "Train model",
+                    type="primary",
+                    icon=":material/play_arrow:",
+                    disabled=split is None,
+                    key="train_model",
+                )
+            if clicked and split is not None and groups is not None:
+                artifact = _run_training(split, groups, settings, batch_note)
+                if artifact is not None:
+                    st.session_state.artifact = artifact
+                    st.session_state.coreml_exports = {}
+                    st.session_state.coreml_benchmarks = {}
 
-    batch_note = _batch_note(split, settings) if split is not None else None
-    if isinstance(batch_note, str) and batch_note.startswith("error:"):
-        st.error(batch_note.removeprefix("error:"))
-        split = None
-        batch_note = None
-    elif batch_note:
-        st.caption(batch_note)
+        stored = st.session_state.get("artifact")
+        trained = stored if isinstance(stored, Artifact) else None
+        signature = _signature(settings, groups)
+        if trained is not None:
+            with _section("app-results"):
+                _render_results(trained, signature)
+            with _section("app-predict"):
+                _render_prediction(trained)
+            with _section("app-export"):
+                _render_export(trained, settings.precision, settings.coreml_reason)
+        with _section("app-statusbar"):
+            _render_statusbar(split, trained, signature)
 
-    if st.button("Train model", type="primary", disabled=split is None) and split is not None:
-        if groups is None:
-            st.error("Add images before training.")
-        else:
-            artifact = _run_training(split, groups, settings, batch_note)
-            if artifact is not None:
-                st.session_state.artifact = artifact
-                st.session_state.coreml_exports = {}
-                st.session_state.coreml_benchmarks = {}
-
-    stored = st.session_state.get("artifact")
-    trained = stored if isinstance(stored, Artifact) else None
-    signature = _signature(settings, groups)
-    if trained is not None:
-        _render_results(trained, signature)
-        _render_export(trained, settings.precision, settings.coreml_reason)
-        _render_prediction(trained)
-        st.markdown("**Recent runs**")
-        render_run_log()
-
-    st.divider()
-    st.caption(f"{APP_TITLE} {__version__} · John Amodeo · MIT (code) · CC BY 4.0 (lessons)")
+    _render_under_the_hood(settings, class_count, split, batch_note, trained)
     return LabSnapshot(
         class_count=class_count,
         source=str(source),
@@ -214,6 +551,134 @@ def _render_workspace(settings: Settings) -> LabSnapshot:
     )
 
 
+@contextmanager
+def _section(key: str) -> Iterator[None]:
+    """One band of the app window. The keyed block is styled and padded; the content
+    sits in an inner block, which Streamlit sizes to fit inside that padding."""
+    with st.container(key=key), st.container():
+        yield
+
+
+def _render_titlebar(settings: Settings) -> None:
+    with _section("app-titlebar"):
+        name, chip = st.columns((3, 2), vertical_alignment="center")
+        with name:
+            st.header("Image Classifier", anchor=False)
+        details = f"ResNet-18 · {settings.mode.title} · {settings.device_label}"
+        chip.markdown(
+            f'<div class="ic-chip"><span>{html.escape(details)}</span></div>',
+            unsafe_allow_html=True,
+        )
+
+
+def _section_head(label: str, meta: str = "") -> str:
+    return (
+        f'<div class="ic-head"><span class="ic-label">{html.escape(label)}</span>'
+        f'<span class="ic-meta">{html.escape(meta)}</span></div>'
+    )
+
+
+def _source_picker() -> str:
+    source = st.radio(
+        "Image source",
+        options=list(SOURCE_LABELS),
+        format_func=SOURCE_LABELS.__getitem__,
+        horizontal=True,
+        key="source",
+        index=2,
+        label_visibility="collapsed",
+    )
+    st.caption(_source_caption(str(source)))
+    return str(source)
+
+
+def _source_caption(source: str) -> str:
+    if source == "shapes":
+        return (
+            f"Circles, squares, and triangles drawn by the app, {EXAMPLE_IMAGES_PER_CLASS} "
+            "per class. Simple on purpose, so a short run shows clear curves."
+        )
+    if source == "public":
+        return (
+            "Public CIFAR-10 images: airplane, automobile, and bird, "
+            f"{PUBLIC_IMAGES_PER_CLASS} labeled images per class. Downloaded once, then "
+            "cached on this machine."
+        )
+    return (
+        f"Your own images: {MIN_CLASSES} to {MAX_CLASSES} classes, each with a label and at "
+        f"least {MIN_IMAGES_PER_CLASS} images. PNG, JPEG, WebP, or BMP."
+    )
+
+
+def _render_train_status(
+    groups: list[LabeledImages] | None,
+    split: SplitData | None,
+    problem: tuple[str, str] | None,
+) -> None:
+    if problem is not None:
+        level, message = problem
+        if level == "info":
+            st.info(message)
+        else:
+            st.error(message)
+    elif groups is None:
+        st.caption("Fix the training data above to train.")
+    elif split is not None:
+        st.caption(
+            f"{_count(len(split.train_images), 'training image')} · "
+            f"{_count(len(split.val_images), 'validation image')} held out to score the run."
+        )
+
+
+def _render_statusbar(
+    split: SplitData | None,
+    trained: Artifact | None,
+    signature: tuple[object, ...] | None,
+) -> None:
+    if trained is not None and signature == trained.signature:
+        accuracy = trained.result.history[-1].val_accuracy
+        state, tone = f"Trained · {accuracy:.0%} validation accuracy", "ready"
+    elif trained is not None:
+        state, tone = "Settings changed · train again", "stale"
+    elif split is not None:
+        state, tone = "Ready to train", "ready"
+    else:
+        state, tone = "Waiting for training data", "idle"
+    st.markdown(
+        '<div class="ic-statusbar">'
+        f"<span>{html.escape(APP_TITLE)} {html.escape(__version__)} · "
+        "John Amodeo · MIT (code) · CC BY 4.0 (lessons)</span>"
+        f'<span class="ic-status ic-status-{tone}">{html.escape(state)}</span></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _render_under_the_hood(
+    settings: Settings,
+    class_count: int,
+    split: SplitData | None,
+    batch_note: str | None,
+    trained: Artifact | None,
+) -> None:
+    """Explanations and measurements behind the classifier, kept out of its frame."""
+    with st.expander("Under the hood"):
+        st.caption("What the classifier above is doing. The lessons point here.")
+        _render_mode_cards(class_count, settings.mode)
+        if split is not None:
+            _render_preview(split, settings)
+        if batch_note:
+            st.caption(batch_note)
+        if trained is not None:
+            _render_run_notes(trained)
+            st.markdown("**Trying an image**")
+            st.caption(
+                "Resize and normalize only, the same path as validation. No flip and no "
+                "rotation. " + CONCEPTS["confidence"].summary
+            )
+        st.markdown("**Recent runs**")
+        render_run_log()
+
+
 def _ensure_state() -> None:
     if "class_ids" not in st.session_state:
         st.session_state.class_ids = [1, 2]
@@ -221,9 +686,20 @@ def _ensure_state() -> None:
 
 
 def _slot_count(source: str) -> int:
-    if source == "example":
+    if source in ("shapes", "public"):
         return 3
     return len(st.session_state.class_ids)
+
+
+def _unavailable_tooltip(tooltip_id: str, label: str, reason: str) -> None:
+    st.markdown(
+        '<span class="hardware-unavailable-help" tabindex="0" role="note" '
+        f'aria-label="{html.escape(label)} unavailable" '
+        f'aria-describedby="{html.escape(tooltip_id)}">'
+        f'<span id="{html.escape(tooltip_id)}" class="hardware-tooltip" role="tooltip">'
+        f"{html.escape(reason)}</span></span>",
+        unsafe_allow_html=True,
+    )
 
 
 def _sidebar() -> Settings:
@@ -231,44 +707,101 @@ def _sidebar() -> Settings:
     st.sidebar.header("Settings")
     st.sidebar.caption("The lessons name which of these to move, and which to leave.")
     hardware = detect_hardware()
-    with st.sidebar.container(border=True):
+    with st.sidebar.container(border=True, key="hardware-panel"):
         st.subheader("Hardware")
-        devices = {option.key: option.label for option in hardware.training if option.available}
-        device = st.radio(
-            "Training device", options=tuple(devices), format_func=devices.__getitem__
-        )
-        for option in hardware.training:
-            if option.reason is not None:
-                st.checkbox(option.label, disabled=True, key=f"training-{option.key}")
-                st.caption(option.reason)
-        st.caption("Neural Engine: cannot train. Core ML runs it for inference only.")
-
-        st.markdown("**Inference backends**")
-        backends = []
-        for option in hardware.inference:
-            checked = st.checkbox(
-                option.label,
-                value=option.available,
-                disabled=not option.available,
-                key=f"inference-{option.key}",
+        cpu = next(option for option in hardware.inference if option.key == "cpu")
+        gpu = next(option for option in hardware.inference if option.key in {"cuda", "mps", "gpu"})
+        neural_engine = next(option for option in hardware.inference if option.key == "CPU_AND_NE")
+        devices = {"cpu": "CPU"}
+        if gpu.available and gpu.key in {"cuda", "mps"}:
+            devices[gpu.key] = "GPU"
+        with st.container(key="hardware-backward"):
+            device = st.radio(
+                "Training",
+                options=tuple(devices),
+                format_func=devices.__getitem__,
+                help=(
+                    "Training teaches the model from labeled images by adjusting its weights. "
+                    "Select the device used to train the model."
+                ),
             )
-            if option.reason is not None:
-                st.caption(option.reason)
-                if (
-                    option.key == "CPU_AND_NE"
-                    and not hardware.apple_silicon
-                    and option.reason != NEURAL_ENGINE_REASON
-                ):
-                    st.caption(NEURAL_ENGINE_REASON)
-            if checked and option.available:
-                backends.append(option.key)
-        precision: Precision = st.radio(
-            "Precision",
-            options=("float32", "float16"),
-            horizontal=True,
-            key="coreml_precision",
-            help="Applies to the Core ML export and Lesson 8. PyTorch stays in float32.",
-        )
+            if not gpu.available:
+                with st.container(key="hardware-training-gpu"):
+                    st.radio(
+                        "GPU unavailable",
+                        options=("GPU",),
+                        index=None,
+                        disabled=True,
+                        label_visibility="collapsed",
+                        key="training-gpu-unavailable",
+                    )
+                    _unavailable_tooltip("training-gpu-reason", "GPU", _GPU_UNAVAILABLE_HELP)
+        backends = []
+        with st.container(key="hardware-forward"):
+            st.markdown(
+                '<strong>Inference</strong> <span class="hardware-help" tabindex="0" '
+                'role="img" aria-label="About inference" aria-describedby="inference-help">'
+                '<svg aria-hidden="true" width="1rem" height="1rem" viewBox="0 0 24 24" '
+                'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+                'stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle>'
+                '<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>'
+                '<line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
+                '<span id="inference-help" class="hardware-tooltip" role="tooltip">'
+                f"{_INFERENCE_HELP}</span></span>",
+                unsafe_allow_html=True,
+            )
+            cpu_selected = st.checkbox(
+                "CPU", value=cpu.available, disabled=not cpu.available, key="inference-cpu"
+            )
+            if cpu_selected and cpu.available:
+                backends.append(cpu.key)
+
+            neural_reasons = []
+            if not hardware.apple_silicon:
+                neural_reasons.append(NEURAL_ENGINE_REASON)
+            elif neural_engine.reason is not None:
+                neural_reasons.append(neural_engine.reason)
+            if not cpu_selected:
+                neural_reasons.append("Select CPU to enable Neural Engine.")
+            neural_help = "Core ML may use both CPU and Neural Engine; it chooses where layers run."
+            neural_help = " ".join((*neural_reasons, neural_help))
+            with st.container(key="hardware-inference-neural"):
+                neural_selected = st.checkbox(
+                    "Neural Engine",
+                    value=neural_engine.available,
+                    disabled=bool(neural_reasons),
+                    key=f"inference-{neural_engine.key}",
+                    help=neural_help,
+                )
+                if neural_reasons:
+                    _unavailable_tooltip("inference-neural-reason", "Neural Engine", neural_help)
+
+            with st.container(key="hardware-inference-gpu"):
+                checked = st.checkbox(
+                    "GPU",
+                    value=gpu.available,
+                    disabled=not gpu.available,
+                    key=f"inference-{gpu.key}",
+                )
+                if not gpu.available:
+                    _unavailable_tooltip("inference-gpu-reason", "GPU", _GPU_UNAVAILABLE_HELP)
+            if checked and gpu.available:
+                backends.append(gpu.key)
+            if neural_selected and not neural_reasons:
+                backends.append(neural_engine.key)
+
+        with st.container(key="hardware-precision"):
+            precision: Precision = st.radio(
+                "Precision",
+                options=("float32", "float16"),
+                horizontal=True,
+                key="coreml_precision",
+                help=(
+                    "Precision is the number format used in the exported Core ML model. "
+                    "Float16 can reduce model size but may change scores; "
+                    "PyTorch training stays in float32."
+                ),
+            )
     coreml_reason = next(option.reason for option in hardware.inference if option.key == "CPU_ONLY")
 
     mode = st.sidebar.selectbox(
@@ -364,64 +897,140 @@ def _mode_label(mode: LearningMode) -> str:
     return "Novel (from scratch)"
 
 
-def _load_groups(source: str) -> tuple[list[LabeledImages] | None, str | None]:
+def _render_training_data(source: str) -> list[LabeledImages] | None:
+    """One card per class, the same for every source. ``None`` until the cards are usable."""
+    head = st.empty()
+    if source == "upload":
+        groups, complete = _upload_groups()
+    else:
+        loaded = _builtin_groups(source)
+        groups, complete = loaded or [], loaded is not None
+    total = sum(len(group.images) for group in groups)
+    head.markdown(
+        _section_head(
+            "Training data",
+            f"{_count(len(groups), 'class', 'classes')} · {_count(total, 'image')}",
+        ),
+        unsafe_allow_html=True,
+    )
+    return groups if complete else None
+
+
+def _builtin_groups(source: str) -> list[LabeledImages] | None:
     try:
-        if source == "example":
-            return _example_groups(), None
-        return _upload_groups(), None
-    except DatasetError as exc:
-        return None, str(exc)
-
-
-def _example_groups() -> list[LabeledImages]:
-    groups = make_shape_dataset()
-    st.caption(
-        "Built-in drawings: circles, squares, and triangles, "
-        f"{EXAMPLE_IMAGES_PER_CLASS} each. They are simple on purpose so a short run can "
-        "show the curves. This is a teaching set, not a benchmark."
-    )
-    columns = st.columns(len(groups))
-    for column, group in zip(columns, groups, strict=True):
-        with column:
-            st.markdown(f"**{group.label}**")
-            st.image(list(group.images[:3]), width=110)
-            st.caption(f"{len(group.images)} images · showing 3")
-    return groups
-
-
-def _upload_groups() -> list[LabeledImages]:
-    st.caption(
-        f"Two classes to start, and up to {MAX_CLASSES}. "
-        "Each class needs a label and at least two images."
-    )
-    groups: list[LabeledImages] = []
-    for position, class_id in enumerate(list(st.session_state.class_ids), start=1):
-        with st.container(border=True):
-            header = st.columns([6, 1])
-            header[0].markdown(f"**Class {position}**")
-            if len(st.session_state.class_ids) > MIN_CLASSES and header[1].button(
-                "Remove",
-                key=f"remove_{class_id}",
-            ):
-                _remove_class(int(class_id))
-                st.rerun()
-            label = st.text_input("Label", key=f"label_{class_id}", placeholder="e.g. daisy")
-            files = st.file_uploader(
-                "Images",
-                key=f"files_{class_id}",
-                accept_multiple_files=True,
-                type=UPLOAD_TYPES,
+        groups = make_shape_dataset() if source == "shapes" else _public_image_groups()
+    except (DatasetError, RuntimeError, urllib.error.URLError, TimeoutError, OSError) as exc:
+        st.error(str(exc))
+        return None
+    for position, group in enumerate(groups, start=1):
+        with st.container(border=True, key=f"class_card_{source}_{position}"):
+            _card_header(position)
+            label_column, images_column = st.columns(CARD_COLUMNS, gap="medium")
+            label_column.text_input(
+                "Label",
+                value=group.label,
+                key=f"builtin_label_{source}_{position}",
+                disabled=True,
             )
-            images: list = []
-            if files:
-                st.caption(f"{len(files)} images" if len(files) != 1 else "1 image")
-                for file in files:
-                    images.append(open_uploaded_file(file.getvalue(), file.name))
-            groups.append(LabeledImages(str(label).strip(), tuple(images)))
-    if st.button("Add class", disabled=len(st.session_state.class_ids) >= MAX_CLASSES):
-        _add_class()
-        st.rerun()
+            with images_column:
+                _render_thumbnails(group.images)
     return groups
+
+
+@st.cache_resource(show_spinner="Downloading the public CIFAR-10 dataset...")
+def _cached_public_image_groups() -> list[LabeledImages]:
+    return make_cifar_dataset()
+
+
+def _public_image_groups() -> list[LabeledImages]:
+    try:
+        return _cached_public_image_groups()
+    except Exception as exc:
+        raise RuntimeError(
+            "Could not download the public CIFAR-10 dataset. Check your network connection "
+            "and try Built-in images again."
+        ) from exc
+
+
+def _upload_groups() -> tuple[list[LabeledImages], bool]:
+    """The editable cards. ``False`` when a file in any card cannot be read."""
+    groups: list[LabeledImages] = []
+    complete = True
+    removable = len(st.session_state.class_ids) > MIN_CLASSES
+    for position, class_id in enumerate(list(st.session_state.class_ids), start=1):
+        with st.container(border=True, key=f"class_card_upload_{class_id}"):
+            _card_header(position, int(class_id) if removable else None)
+            label_column, images_column = st.columns(CARD_COLUMNS, gap="medium")
+            with label_column:
+                label = st.text_input("Label", key=f"label_{class_id}", placeholder="e.g. daisy")
+                files = st.file_uploader(
+                    "Images",
+                    key=f"files_{class_id}",
+                    accept_multiple_files=True,
+                    type=UPLOAD_TYPES,
+                )
+            images: list[Image.Image] = []
+            with images_column:
+                try:
+                    images = [
+                        open_uploaded_file(file.getvalue(), file.name) for file in files or ()
+                    ]
+                except DatasetError as exc:
+                    st.error(str(exc))
+                    images = []
+                    complete = False
+                else:
+                    _render_thumbnails(images)
+            groups.append(LabeledImages(str(label).strip(), tuple(images)))
+    st.button(
+        "Add class",
+        key="add_class",
+        icon=":material/add:",
+        disabled=len(st.session_state.class_ids) >= MAX_CLASSES,
+        on_click=_add_class,
+    )
+    return groups, complete
+
+
+def _card_header(position: int, removable_id: int | None = None) -> None:
+    """The class number, and a Remove button for ``removable_id`` when one is given."""
+    title, action = st.columns((5, 1), vertical_alignment="center")
+    title.markdown(f"**Class {position}**")
+    if removable_id is not None:
+        with action:
+            st.button(
+                "Remove",
+                key=f"remove_{removable_id}",
+                type="tertiary",
+                icon=":material/close:",
+                on_click=_remove_class,
+                args=(removable_id,),
+            )
+
+
+def _render_thumbnails(images: Sequence[Image.Image]) -> None:
+    if not images:
+        st.markdown(
+            '<div class="ic-empty">Images you add appear here</div>',
+            unsafe_allow_html=True,
+        )
+        return
+    shown = images[:THUMBNAIL_LIMIT]
+    st.image([_thumbnail(image) for image in shown], width=THUMBNAIL_WIDTH)
+    caption = _count(len(images), "image")
+    if len(images) > len(shown):
+        caption += f" · showing {len(shown)}"
+    st.caption(caption)
+
+
+def _thumbnail(image: Image.Image) -> Image.Image:
+    """A centered square crop, so every class shows an even strip of tiles."""
+    side = min(THUMBNAIL_PIXELS, *image.size)
+    return ImageOps.fit(image, (side, side), Image.Resampling.LANCZOS)
+
+
+def _count(number: int, singular: str, plural: str | None = None) -> str:
+    return f"{number} {singular if number == 1 else plural or singular + 's'}"
 
 
 def _add_class() -> None:
@@ -508,18 +1117,27 @@ def _render_preview(split: SplitData, settings: Settings) -> None:
             "at it does not change the run."
         )
         columns = st.columns(PREVIEW_COUNT + 2)
-        columns[0].image(prepared, caption=f"Train · {train_name}", width=140)
+        columns[0].image(_shrunk(prepared, 140), caption=f"Train · {train_name}")
         for index, view in enumerate(views, start=1):
-            columns[index].image(view, caption=f"Draw {index}", width=140)
-        columns[PREVIEW_COUNT + 1].image(validation, caption=f"Validation · {val_name}", width=140)
+            columns[index].image(_shrunk(view, 140), caption=f"Draw {index}")
+        columns[PREVIEW_COUNT + 1].image(
+            _shrunk(validation, 140), caption=f"Validation · {val_name}"
+        )
         return
     st.caption(
         "Augmentation is off, so every epoch sees these resized pixels. "
         "Validation is resized the same way."
     )
     left, right = st.columns(2)
-    left.image(prepared, caption=f"Train · {train_name}", width=220)
-    right.image(validation, caption=f"Validation · {val_name}", width=220)
+    left.image(_shrunk(prepared, 220), caption=f"Train · {train_name}")
+    right.image(_shrunk(validation, 220), caption=f"Validation · {val_name}")
+
+
+def _shrunk(image: Image.Image, width: int) -> Image.Image:
+    """A copy at most ``width`` wide. Without a fixed width, st.image fits it to its column."""
+    copy = image.copy()
+    copy.thumbnail((width, copy.height), Image.Resampling.LANCZOS)
+    return copy
 
 
 def _batch_note(split: SplitData, settings: Settings) -> str | None:
@@ -660,12 +1278,45 @@ def _signature(
 
 
 def _render_results(artifact: Artifact, signature: tuple[object, ...] | None) -> None:
-    st.subheader("How the run went")
+    history = artifact.result.history
+    st.markdown(
+        _section_head("Results", f"{artifact.mode.title} · {_count(len(history), 'epoch')}"),
+        unsafe_allow_html=True,
+    )
     if signature != artifact.signature:
         st.warning(
             "Showing the previous run. The images or settings have changed, so train again "
             "before reading this as the current setup."
         )
+    _render_metrics(artifact)
+    curves, confusion, per_class = st.tabs(RESULT_TABS)
+    with curves:
+        _show_figure(plot_history(history))
+    with confusion:
+        _, matrix, _ = st.columns((1, 3, 1))
+        with matrix:
+            _show_figure(plot_confusion(artifact.result.confusion, artifact.class_names))
+    with per_class:
+        _render_class_table(artifact)
+
+
+def _render_metrics(artifact: Artifact) -> None:
+    history = artifact.result.history
+    last = history[-1]
+    seconds = sum(epoch.train_seconds + epoch.val_seconds for epoch in history)
+    tiles = (
+        ("Validation accuracy", f"{last.val_accuracy:.0%}"),
+        ("Validation loss", f"{last.val_loss:.3f}"),
+        ("Training accuracy", f"{last.train_accuracy:.0%}"),
+        ("Training time", f"{seconds:.1f} s" if seconds > 0 else "—"),
+    )
+    for column, (label, value) in zip(st.columns(len(tiles)), tiles, strict=True):
+        column.metric(label, value, border=True)
+
+
+def _render_run_notes(artifact: Artifact) -> None:
+    """How to read the Results section. Shown under the hood, not in the frame."""
+    st.markdown("**How the run went**")
     st.caption(artifact.details)
     timing_line = _timing_line(artifact)
     if timing_line:
@@ -683,20 +1334,15 @@ def _render_results(artifact: Artifact, signature: tuple[object, ...] | None) ->
             "Transfer mode keeps the backbone, including its BatchNorm statistics, fixed. "
             "Only the final layer changes."
         )
-    _show_figure(plot_history(artifact.result.history))
     st.caption(
         "Loss is the mean cross-entropy per image. Accuracy is the fraction labeled correctly. "
-        "Train and validation share the axes so a gap is easy to see."
+        "The Results chart puts training and validation on shared axes, so a gap is easy to see."
     )
-    left, right = st.columns((1.15, 1))
-    with left:
-        st.markdown("**Validation confusion matrix**")
-        st.caption("Rows are the true class. Columns are the predicted class.")
-        _show_figure(plot_confusion(artifact.result.confusion, artifact.class_names))
-    with right:
-        st.markdown("**Per-class validation accuracy**")
-        st.caption("Of the held-out images of this class, how many the model labeled correctly.")
-        _render_class_table(artifact)
+    st.caption(
+        "In the confusion matrix, rows are the true class and columns are the predicted class. "
+        "Per-class accuracy counts how many held-out images of each class the model labeled "
+        "correctly."
+    )
 
 
 def _timing_line(artifact: Artifact) -> str:
@@ -741,11 +1387,17 @@ def _render_class_table(artifact: Artifact) -> None:
 
 
 def _render_export(artifact: Artifact, precision: Precision, reason: str | None) -> None:
-    st.subheader("Export to Core ML")
-    st.caption(f"Export precision: {precision} (set in Hardware).")
+    st.markdown(_section_head("Export", f"Core ML · {precision}"), unsafe_allow_html=True)
     key = (artifact.signature, precision)
     exports = st.session_state.setdefault("coreml_exports", {})
-    if st.button("Convert to Core ML") and key not in exports:
+    convert_column, download_column = st.columns((1, 1.25), vertical_alignment="center")
+    with convert_column:
+        clicked = st.button(
+            "Convert to Core ML",
+            icon=":material/sync:",
+            help="Precision is set under Hardware in the sidebar.",
+        )
+    if clicked and key not in exports:
         try:
             with st.spinner("Converting the model to Core ML..."):
                 exports[key] = export_model(
@@ -755,12 +1407,14 @@ def _render_export(artifact: Artifact, precision: Precision, reason: str | None)
             st.error(f"Could not convert the model to Core ML: {exc}")
     exported = exports.get(key)
     if isinstance(exported, Export):
-        st.download_button(
-            "Download Core ML package",
-            exported.zip_bytes,
-            file_name="image-classifier-lab.mlpackage.zip",
-            mime="application/zip",
-        )
+        with download_column:
+            st.download_button(
+                "Download Core ML package",
+                exported.zip_bytes,
+                file_name="image-classifier-lab.mlpackage.zip",
+                mime="application/zip",
+                icon=":material/download:",
+            )
         st.write(f"Package size ({precision}): {format_bytes(exported.size_bytes)}")
         render_verification(exported)
     if reason:
@@ -768,12 +1422,13 @@ def _render_export(artifact: Artifact, precision: Precision, reason: str | None)
 
 
 def _render_prediction(artifact: Artifact) -> None:
-    st.subheader("Try an image")
-    st.caption(
-        "Resize and normalize only, the same path as validation. No flip and no rotation. "
-        + CONCEPTS["confidence"].summary
+    st.markdown(_section_head("Try an image"), unsafe_allow_html=True)
+    upload = st.file_uploader(
+        "Image to classify",
+        type=UPLOAD_TYPES,
+        key="prediction_file",
+        label_visibility="collapsed",
     )
-    upload = st.file_uploader("Image to classify", type=UPLOAD_TYPES, key="prediction_file")
     if upload is None:
         return
     try:
@@ -795,12 +1450,11 @@ def _render_prediction(artifact: Artifact) -> None:
         return
     winner = max(range(len(probabilities)), key=probabilities.__getitem__)
     percent = probabilities[winner] * 100
-    left, right = st.columns((1, 1.3))
-    with left:
-        st.image(image, width=320)
+    left, right = st.columns((1, 1.3), gap="large", vertical_alignment="center")
+    with left, st.container(key="prediction-result"):
+        st.image(image, width=240)
         st.markdown(f"**{artifact.class_names[winner]}**")
         st.markdown(f"{percent:.1f}% confidence")
-        st.caption(CONCEPTS["confidence"].summary)
     with right:
         _show_figure(plot_probabilities(artifact.class_names, probabilities))
 

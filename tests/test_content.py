@@ -99,6 +99,20 @@ def test_rendered_text_has_no_placeholders_left() -> None:
     assert f"3 × {IMAGE_SIZE} × {IMAGE_SIZE}" in tensor.paragraphs[0]
 
 
+def test_relocated_previews_are_referenced_in_lessons_and_help() -> None:
+    for key in ("images", "neuron"):
+        assert "Under the hood" in curriculum.SECTION_BY_KEY[key].exercise.instructions
+    for key in ("dynamics", "transfer"):
+        paragraphs = (
+            paragraph
+            for block in curriculum.SECTION_BY_KEY[key].blocks
+            for paragraph in block.paragraphs
+        )
+        assert any("Under the hood" in paragraph for paragraph in paragraphs)
+    for key in ("transfer_learning", "augmentation"):
+        assert "Under the hood" in explanations.CONCEPTS[key].body
+
+
 def test_concept_bodies_join_paragraphs_with_blank_lines() -> None:
     record = read_toml("concepts.toml")["transfer_learning"]
     body = explanations.CONCEPTS["transfer_learning"].body

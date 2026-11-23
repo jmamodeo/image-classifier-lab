@@ -75,25 +75,23 @@ def test_app_script_boots() -> None:
     app.run()
     assert not app.exception
     titles = [title.value for title in app.title]
-    assert "Lessons in AI from an Image Classifier" in titles
-    labels = [button.label for button in app.button]
-    assert "Training lab" in labels
-    assert any("Pixels" in label for label in labels)
+    assert "Welcome to Image Classifier Lab" in titles
+    assert [item.label for item in app.expander] == [
+        *(f"Lesson {section.number}: {section.title}" for section in SECTIONS),
+        "Under the hood",
+    ]
+    assert app.header[0].value == "Image Classifier"
     markdown = " ".join(getattr(item, "value", "") for item in app.markdown)
     assert "Learning objectives" in markdown
     batch = next(item for item in app.sidebar.number_input if "Batch" in item.label)
     assert batch.value == 4
-    app.button(key="nav-hardware").click().run()
-    assert not app.exception
     assert any("Exercise" in getattr(item, "value", "") for item in app.markdown)
-    app.button(key="nav-lab").click().run()
-    assert not app.exception
     assert any(button.label == "Train model" for button in app.button)
     assert all(button.label != "Open the training lab" for button in app.button)
 
 
 def test_exercise_done_persists_across_lessons() -> None:
-    """A checked exercise stays checked after the lesson is left and reopened."""
+    """Checked exercises survive interactions in other lessons."""
     app = AppTest.from_file(str(ROOT / "main.py"), default_timeout=60)
     total = sum(len(section.exercise_items()) for section in SECTIONS)
     app.run()
@@ -103,11 +101,11 @@ def test_exercise_done_persists_across_lessons() -> None:
     assert app.checkbox(key="done-images").value is True
     assert _exercises_marked(app) == f"1 of {total} exercises marked done."
 
-    app.button(key="nav-neuron").click().run()
+    app.slider(key="neuron-bias").set_value(1.0).run()
     assert not app.exception
     assert _exercises_marked(app) == f"1 of {total} exercises marked done."
 
-    app.button(key="nav-images").click().run()
+    app.slider(key="norm-pixel").set_value(63).run()
     assert not app.exception
     assert app.checkbox(key="done-images").value is True
     assert _exercises_marked(app) == f"1 of {total} exercises marked done."

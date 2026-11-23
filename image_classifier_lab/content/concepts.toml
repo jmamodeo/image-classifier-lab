@@ -16,8 +16,8 @@ body = [
     Novel mode uses the same ResNet-18 shape with random weights, and every \
     layer is allowed to learn from your images. The new final layer starts \
     random in both modes. What changes is the backbone: pretrained and frozen, \
-    or random and trainable. The two cards under your images count the \
-    parameters either way.""",
+    or random and trainable. The two parameter cards in Under the hood, below \
+    the classifier, count the parameters either way.""",
   """\
     On a small novel-mode set, BatchNorm's stored averages are refreshed from \
     the training images at the end of each epoch. Left on the default \
@@ -107,10 +107,10 @@ body = [
     Each time a training image is loaded, it may be flipped left-right \
     ({flip_percent} of the time) and rotated up to {rotation_degrees} degrees. \
     The next epoch loads it again and draws a new flip and angle, so the model \
-    does not see an identical tensor every pass. The preview under your images \
-    shows a few of those draws. It uses its own random generator, so looking \
-    at it does not change the run you are about to start. Validation images, \
-    and the image you classify later, are only resized and normalized.""",
+    does not see an identical tensor every pass. The preview in Under the hood \
+    shows a few of those draws. It uses its own random generator, so looking at \
+    it does not change the run you are about to start. Validation images, and \
+    the image you classify later, are only resized and normalized.""",
 ]
 
 [confidence]

@@ -67,9 +67,10 @@ visual = "normalize"
 [exercise]
 changed = []
 instructions = """\
-  In the training lab below, choose Built-in shapes. Leave every sidebar \
-  setting where it is. Look at the row of pictures under Augmentation and the \
-  holdout. You do not need to press Train."""
+  In the Image Classifier below, choose Built-in shapes. Leave every sidebar \
+  setting where it is. Open Under the hood, below the classifier, and look at \
+  the row of pictures under Augmentation and the holdout. You do not need to \
+  press Train."""
 look_for = """\
   The training draws are the same drawing, flipped or slightly rotated. The \
   validation picture is only resized. Both of them still go through the 0–1 \

@@ -22,8 +22,6 @@ from image_classifier_lab.coreml import (
     benchmark_export,
 )
 from image_classifier_lab.curriculum import (
-    LAB_PAGE,
-    SECTION_BY_KEY,
     SECTIONS,
     Block,
     Exercise,
@@ -93,9 +91,6 @@ from image_classifier_lab.model import LearningMode, architecture_parameter_coun
 from image_classifier_lab.plots import VAL_COLOR, plot_confusion
 from image_classifier_lab.training import TrainResult, resolve_batching
 
-PAGE_KEY = "curriculum_page"
-VISITED_KEY = "curriculum_visited"
-LAST_SECTION_KEY = "curriculum_last_section"
 DONE_KEY = "curriculum_done"
 RUN_LOG_KEY = "run_log"
 _RUN_LIMIT = 8
@@ -185,46 +180,24 @@ def render_run_log() -> None:
 
 
 def render_curriculum(snapshot: LabSnapshot) -> None:
-    """Navigator plus the current lesson. The lab is rendered separately, below."""
+    """Stack collapsed lessons above the separately rendered classifier lab."""
     _sync_exercise_done()
-    page = _current_page()
-    if page != LAB_PAGE:
-        _visit(page)
-        st.session_state[LAST_SECTION_KEY] = page
-    _navigator(page)
-    if page == LAB_PAGE:
-        last = st.session_state.get(LAST_SECTION_KEY)
-        if isinstance(last, str) and last in SECTION_BY_KEY:
-            section = SECTION_BY_KEY[last]
-            st.caption(
-                f"Training lab. Section {section.number}, {section.title}, is one of the "
-                "buttons above."
-            )
-        else:
-            st.caption("Training lab. The lesson buttons are above.")
-        return
-    _render_section(SECTION_BY_KEY[page], snapshot)
-
-
-def _current_page() -> str:
-    if PAGE_KEY not in st.session_state:
-        st.session_state[PAGE_KEY] = SECTIONS[0].key
-    page = st.session_state.get(PAGE_KEY, SECTIONS[0].key)
-    if page == LAB_PAGE or page in SECTION_BY_KEY:
-        return str(page)
-    return SECTIONS[0].key
-
-
-def open_page(page: str) -> None:
-    """Select a lesson or the training lab. Used by the navigator buttons."""
-    st.session_state[PAGE_KEY] = page
+    st.subheader("Lessons")
+    st.caption("Expand any lesson to explore it. The Image Classifier is below.")
+    completed = _exercise_done()
+    done = len(completed & _EXERCISE_IDS)
+    st.progress(done / len(_EXERCISE_IDS))
+    st.caption(f"{done} of {len(_EXERCISE_IDS)} exercises marked done.")
+    for section in SECTIONS:
+        mark = "✓ " if all(key in completed for key, _ in section.exercise_items()) else ""
+        with st.expander(f"{mark}Lesson {section.number}: {section.title}", expanded=False):
+            _render_section(section, snapshot)
 
 
 def _exercise_done() -> set[str]:
     """IDs whose exercise checkbox is checked.
 
-    The checkbox widget is only created for the open lesson. Streamlit drops a
-    widget key that was not rendered, so the durable record is this set.
+    Keep a durable record separate from the checkbox widget state.
     """
     stored = st.session_state.get(DONE_KEY)
     if not isinstance(stored, set):
@@ -246,73 +219,6 @@ def _sync_exercise_done() -> None:
             done.discard(exercise_id)
 
 
-def _visit(page: str) -> None:
-    opened = set(st.session_state.get(VISITED_KEY, ()))
-    opened.add(page)
-    st.session_state[VISITED_KEY] = opened
-
-
-def _navigator(page: str) -> None:
-    total = len(SECTIONS)
-    opened = len(set(st.session_state.get(VISITED_KEY, ())) & {item.key for item in SECTIONS})
-    completed = _exercise_done()
-    done = len(completed & _EXERCISE_IDS)
-    st.progress(opened / total, text=f"{opened} of {total} sections opened")
-    st.caption(f"{done} of {len(_EXERCISE_IDS)} exercises marked done.")
-    previous, following, lab = st.columns([1, 1, 2])
-    if page == LAB_PAGE:
-        last = st.session_state.get(LAST_SECTION_KEY)
-        if isinstance(last, str) and last in SECTION_BY_KEY:
-            section = SECTION_BY_KEY[last]
-            previous.button(
-                f"Back to {section.number}",
-                key="nav-back",
-                on_click=open_page,
-                args=(section.key,),
-                use_container_width=True,
-            )
-    else:
-        index = next(i for i, item in enumerate(SECTIONS) if item.key == page)
-        previous_key = SECTIONS[max(index - 1, 0)].key
-        next_key = SECTIONS[min(index + 1, total - 1)].key
-        previous.button(
-            "Previous",
-            key="nav-prev",
-            on_click=open_page,
-            args=(previous_key,),
-            disabled=index == 0,
-            use_container_width=True,
-        )
-        following.button(
-            "Next",
-            key="nav-next",
-            on_click=open_page,
-            args=(next_key,),
-            disabled=index == total - 1,
-            use_container_width=True,
-        )
-    lab.button(
-        "Training lab",
-        key="nav-lab",
-        type="primary" if page == LAB_PAGE else "secondary",
-        on_click=open_page,
-        args=(LAB_PAGE,),
-        use_container_width=True,
-    )
-    columns = st.columns(total)
-    for column, section in zip(columns, SECTIONS, strict=True):
-        mark = "✓ " if all(key in completed for key, _ in section.exercise_items()) else ""
-        column.button(
-            f"{mark}{section.number} {section.short}",
-            key=f"nav-{section.key}",
-            help=section.title,
-            type="primary" if page == section.key else "secondary",
-            on_click=open_page,
-            args=(section.key,),
-            use_container_width=True,
-        )
-
-
 def _render_section(section: Section, snapshot: LabSnapshot) -> None:
     st.subheader(f"{section.number} of {len(SECTIONS)}  ·  {section.title}")
     with st.container(border=True):
@@ -324,8 +230,8 @@ def _render_section(section: Section, snapshot: LabSnapshot) -> None:
     for exercise_id, exercise in section.exercise_items():
         _render_exercise(exercise, exercise_id)
     st.caption(
-        "The training lab is on this page, below this lesson. The Training lab button "
-        "hides the lesson so the lab sits at the top."
+        "Use the Image Classifier below the lessons to try this exercise. "
+        "The settings stay in the sidebar."
     )
 
 
@@ -355,7 +261,7 @@ def _render_exercise(exercise: Exercise, exercise_id: str) -> None:
         st.write(exercise.look_for)
         st.markdown("Check")
         st.write(exercise.question)
-        with st.expander("Show the check"):
+        with st.popover("Show the check"):
             st.write(exercise.answer)
         widget_key = f"done-{exercise_id}"
         if widget_key not in st.session_state:
@@ -741,7 +647,7 @@ def _hardware(snapshot: LabSnapshot) -> None:
         f"{name} {format_bytes(size)}" for name, size in analysis.output_bytes_by_kind
     )
     st.caption(f"Forward outputs by layer type: {kinds}.")
-    with st.expander("What these counts include"):
+    with st.popover("What these counts include"):
         for note in MEASURE_NOTES:
             st.write(note)
 
@@ -800,7 +706,10 @@ def _on_device(snapshot: LabSnapshot) -> None:
         st.info("Select an inference backend in Hardware to measure it.")
         return
     if exported is None and any(backend in COMPUTE_UNITS for backend in backends):
-        return
+        st.info("Convert to Core ML to include the Neural Engine benchmark.")
+        backends = tuple(backend for backend in backends if backend not in COMPUTE_UNITS)
+        if not backends:
+            return
     key = (trained.signature, precision, backends)
     benchmarks = st.session_state.setdefault("coreml_benchmarks", {})
     if st.button("Measure on-device inference"):
@@ -826,6 +735,11 @@ def _on_device(snapshot: LabSnapshot) -> None:
         st.caption(
             f"Batch 1, {WARMUP_RUNS} warmup runs, {MEASURE_RUNS} measured runs. "
             f"Core ML uses the selected export precision ({precision}); PyTorch uses float32."
+            + (
+                " Core ML CPU_AND_NE permits both CPU and Neural Engine."
+                if "CPU_AND_NE" in backends
+                else ""
+            )
         )
 
 

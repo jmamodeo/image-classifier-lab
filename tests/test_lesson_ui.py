@@ -1,4 +1,4 @@
-"""The lesson pages: navigation, exercises, interactive demos, and the run log."""
+"""Collapsed lessons, exercises, interactive demos, and the run log."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 from image_classifier_lab import lesson_ui
-from image_classifier_lab.curriculum import LAB_PAGE, SECTIONS
-from image_classifier_lab.lesson_ui import DONE_KEY, PAGE_KEY, RUN_LOG_KEY, LabSnapshot
+from image_classifier_lab.curriculum import SECTION_BY_KEY, SECTIONS
+from image_classifier_lab.lesson_ui import DONE_KEY, RUN_LOG_KEY, LabSnapshot
 from image_classifier_lab.measure import RunRecord
 from image_classifier_lab.model import LearningMode, create_model
 from image_classifier_lab.training import EpochMetrics, TrainResult
@@ -44,7 +44,7 @@ def snapshot(
 ) -> LabSnapshot:
     return LabSnapshot(
         class_count=3,
-        source="example",
+        source="shapes",
         mode=mode,
         batch_size=batch_size,
         val_percent=20,
@@ -85,6 +85,14 @@ def curriculum_script(lab):  # noqa: ANN001
     render_curriculum(lab)
 
 
+def section_script(lab, page):  # noqa: ANN001
+    from image_classifier_lab.curriculum import SECTION_BY_KEY
+    from image_classifier_lab.lesson_ui import _render_section, _sync_exercise_done
+
+    _sync_exercise_done()
+    _render_section(SECTION_BY_KEY[page], lab)
+
+
 def run_log_script() -> None:
     from image_classifier_lab.lesson_ui import render_run_log
 
@@ -92,12 +100,13 @@ def run_log_script() -> None:
 
 
 def open_lessons(lab: LabSnapshot | None = None, page: str | None = None) -> AppTest:
-    app = AppTest.from_function(
-        curriculum_script, args=(lab or snapshot(),), default_timeout=TIMEOUT
-    )
     if page is not None:
-        app.session_state[PAGE_KEY] = page
-    return app.run()
+        return AppTest.from_function(
+            section_script, args=(lab or snapshot(), page), default_timeout=TIMEOUT
+        ).run()
+    return AppTest.from_function(
+        curriculum_script, args=(lab or snapshot(),), default_timeout=TIMEOUT
+    ).run()
 
 
 def captions(app: AppTest) -> list[str]:
@@ -154,46 +163,23 @@ def test_batch_size_that_cannot_run_is_reported_in_the_epoch_lesson() -> None:
     assert app.error
 
 
-def test_next_previous_and_lab_buttons_move_between_pages() -> None:
+def test_lessons_are_stacked_and_initially_collapsed() -> None:
     app = open_lessons()
-    assert app.session_state[PAGE_KEY] == SECTIONS[0].key
-    assert app.button(key="nav-prev").disabled
-
-    app.button(key="nav-next").click().run()
-    assert app.session_state[PAGE_KEY] == SECTIONS[1].key
-    app.button(key="nav-prev").click().run()
-    assert app.session_state[PAGE_KEY] == SECTIONS[0].key
-
-    app.button(key=f"nav-{SECTIONS[-1].key}").click().run()
-    assert app.session_state[PAGE_KEY] == SECTIONS[-1].key
-    assert app.button(key="nav-next").disabled
-
-    app.button(key="nav-lab").click().run()
-    assert app.session_state[PAGE_KEY] == LAB_PAGE
-    assert not app.subheader
-    assert any(SECTIONS[-1].title in text for text in captions(app))
-
-    app.button(key="nav-back").click().run()
-    assert app.session_state[PAGE_KEY] == SECTIONS[-1].key
-
-
-def test_lab_page_before_any_lesson_has_no_back_button() -> None:
-    app = open_lessons(page=LAB_PAGE)
     assert not app.exception
-    assert "Training lab. The lesson buttons are above." in captions(app)
-    assert not [button for button in app.button if button.key == "nav-back"]
+    assert [item.label for item in app.expander] == [
+        f"Lesson {section.number}: {section.title}" for section in SECTIONS
+    ]
+    assert all(not item.proto.expanded for item in app.expander)
+    assert not [button for button in app.button if (button.key or "").startswith("nav-")]
+    for expander, section in zip(app.expander, SECTIONS, strict=True):
+        assert expander.checkbox(key=f"done-{section.key}").value is False
 
 
-def test_an_unknown_page_opens_the_first_lesson() -> None:
-    app = open_lessons(page="missing")
-    assert app.subheader[0].value.startswith(f"{SECTIONS[0].number} of")
-
-
-def test_progress_counts_opened_sections() -> None:
+def test_progress_counts_completed_exercises() -> None:
     app = open_lessons()
-    assert app.progress[0].value == int(100 / len(SECTIONS))
-    app.button(key="nav-next").click().run()
-    assert app.progress[0].value == int(200 / len(SECTIONS))
+    assert app.get("progress")[0].proto.value == 0
+    app.checkbox(key="done-images").check().run()
+    assert app.get("progress")[0].proto.value == int(100 / len(lesson_ui._EXERCISE_IDS))
 
 
 def test_exercise_checkbox_persists_across_lessons() -> None:
@@ -203,26 +189,24 @@ def test_exercise_checkbox_persists_across_lessons() -> None:
     assert f"0 of {total} exercises marked done." in captions(app)
 
     app.checkbox(key=f"done-{first}").check().run()
-    app.button(key="nav-next").click().run()
-    assert app.session_state[PAGE_KEY] == second
     assert app.session_state[DONE_KEY] == {first}
     assert f"1 of {total} exercises marked done." in captions(app)
-    assert any(button.label.startswith("✓ ") for button in app.button)
+    assert app.expander[0].label.startswith("✓ ")
 
     app.checkbox(key=f"done-{second}").check().run()
-    app.button(key="nav-prev").click().run()
     assert app.checkbox(key=f"done-{first}").value is True
     assert app.session_state[DONE_KEY] == {first, second}
 
     app.checkbox(key=f"done-{first}").uncheck().run()
-    app.button(key="nav-next").click().run()
     assert app.session_state[DONE_KEY] == {second}
     assert app.checkbox(key=f"done-{second}").value is True
 
 
-def test_exercise_answer_is_inside_an_expander() -> None:
-    app = open_lessons()
-    assert [item.label for item in app.expander] == ["Show the check"]
+def test_exercise_answer_is_inside_a_popover() -> None:
+    app = open_lessons(page="images")
+    popover = app.get("popover")[0]
+    assert popover.proto.popover.label == "Show the check"
+    assert SECTION_BY_KEY["images"].exercise.answer in [item.value for item in popover.markdown]
 
 
 def test_pixel_slider_changes_the_reported_pixel() -> None:
@@ -262,8 +246,9 @@ def test_toy_step_and_convolution_sliders_rerender() -> None:
 
 
 def test_hardware_lessons_list_devices_and_runs() -> None:
-    app = AppTest.from_function(curriculum_script, args=(snapshot(),), default_timeout=TIMEOUT)
-    app.session_state[PAGE_KEY] = "hardware"
+    app = AppTest.from_function(
+        section_script, args=(snapshot(), "hardware"), default_timeout=TIMEOUT
+    )
     app.session_state[RUN_LOG_KEY] = (record(), record("Transfer", peak=2048))
     app.run()
     assert not app.exception
