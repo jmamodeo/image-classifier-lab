@@ -57,8 +57,8 @@ paragraphs = [
     degrees. The next epoch loads it again and draws a new flip and angle, so \
     the model does not see an identical tensor every pass. Validation images, \
     and any picture you classify later, are only resized and normalized. The \
-    preview in the lab uses its own random numbers, so looking at it does not \
-    change the run.""",
+    preview in Under the hood uses its own random numbers, so looking at it \
+    does not change the run.""",
   """\
     The seed fixes the initial weights, which images are held out, the shuffle \
     order, and the augmentation sequence. The same seed on a CPU is meant to \

@@ -30,7 +30,7 @@ dependencies = [
     "coremltools>=8.0",
     "torch>=2.2",
     "torchvision>=0.17",
-    "streamlit>=1.33",
+    "streamlit>=1.42",
     "matplotlib>=3.8",
     "pillow>=10",
 ]

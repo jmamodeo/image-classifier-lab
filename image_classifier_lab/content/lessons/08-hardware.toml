@@ -88,9 +88,9 @@ paragraphs = [
     machine and the model.""",
   """\
     Core ML can be allowed CPU only, CPU and GPU, CPU and Neural Engine, or \
-    ALL. These settings say what Core ML may use, not what it did use. Timings \
-    alone cannot tell you where a layer ran. CPU_AND_NE is disabled on \
-    machines without a Neural Engine.""",
+    ALL. The Neural Engine option in this app allows both CPU and Neural \
+    Engine. These settings say what Core ML may use, not what it did use; \
+    timings alone cannot tell you where a layer ran.""",
   """\
     Float16 takes half as many bytes per weight as float32, but the package \
     also includes other data. Rounding can move the scores without changing \
@@ -122,11 +122,10 @@ answer = """\
 key = "neural-engine"
 changed = ["inference_backends"]
 instructions = """\
-  Train and export a model. Predict whether CPU_AND_NE will beat CPU_AND_GPU \
-  on one image, then select those backends in Hardware and measure them. \
-  Without a Neural Engine, CPU_AND_NE is unavailable: compare CPU_ONLY and \
-  CPU_AND_GPU instead. If Core ML prediction is unavailable, compare the \
-  PyTorch backends that are enabled."""
+  Train and export a model. Predict whether the Neural Engine option will \
+  beat the CPU on one image, then select both in Hardware and measure them. \
+  Find Neural Engine below CPU. If it is unavailable, compare the CPU and \
+  GPU instead."""
 look_for = "Compare the median latency rows for the same export."
 question = "Did the option you picked have the lower measured latency?"
 answer = """\
@@ -154,12 +153,11 @@ answer = """\
 key = "all"
 changed = ["inference_backends"]
 instructions = """\
-  Select Core ML ALL and the other available Core ML settings. Measure them \
-  together on the same export. If Core ML prediction is unavailable here, use \
-  the check below instead."""
-look_for = "Which of the other medians is closest to ALL?"
-question = "Which compute unit did ALL pick? What can the table tell you?"
+  Select CPU, GPU, and Neural Engine when available, and measure them on \
+  the same image. Export the model to include the Neural Engine. If it is \
+  unavailable, compare the available CPU and GPU measurements."""
+look_for = "Which median is lowest? Notice that PyTorch and Core ML use different runtimes."
+question = "Does a fast Neural Engine result prove that every layer ran there?"
 answer = """\
-  Similar timings are a clue, not proof. ALL lets Core ML use any available \
-  unit, and it may split work across them. The table reports time, not which \
-  unit ran each layer."""
+  No. A fast timing is a clue, not proof: Core ML may use both CPU and \
+  Neural Engine. The table reports time, not which unit ran each layer."""

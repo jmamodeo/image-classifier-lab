@@ -51,8 +51,8 @@ def texts(elements: Sequence[Any]) -> list[str]:
 
 def configure_tiny_run(app: AppTest, mode: LearningMode = LearningMode.NOVEL) -> AppTest:
     """Smallest run the controls allow: one epoch, batch of two, CPU, seed 0."""
-    app.radio(key="source").set_value("example")
-    by_label(app.sidebar.radio, "Training device").set_value("cpu")
+    app.radio(key="source").set_value("shapes")
+    by_label(app.sidebar.radio, "Training").set_value("cpu")
     by_label(app.sidebar.selectbox, "Learning mode").set_value(mode)
     by_label(app.sidebar.number_input, "Batch size").set_value(2)
     by_label(app.sidebar.slider, "Epochs").set_value(1)
@@ -85,18 +85,71 @@ def trained_app() -> Iterator[AppTest]:
 def test_app_loads_on_the_upload_form() -> None:
     app = new_app().run()
     assert not app.exception
-    assert app.title[0].value == ui.APP_TITLE
+    assert app.title[0].value == "Welcome to Image Classifier Lab"
     assert app.radio(key="source").value == "upload"
     assert train_button(app).disabled
     assert any("Add a label" in message for message in texts(app.info))
 
 
+def test_source_options_include_public_labeled_images(monkeypatch: pytest.MonkeyPatch) -> None:
+    groups = [
+        LabeledImages(
+            "airplane", tuple(Image.new("RGB", (32, 32), (200, 40, 40)) for _ in range(24))
+        ),
+        LabeledImages(
+            "automobile", tuple(Image.new("RGB", (32, 32), (20, 40, 200)) for _ in range(24))
+        ),
+        LabeledImages("bird", tuple(Image.new("RGB", (32, 32), (20, 200, 40)) for _ in range(24))),
+    ]
+    monkeypatch.setattr(ui, "make_cifar_dataset", lambda: groups)
+    app = new_app().run()
+    assert app.radio(key="source").options == [
+        "Built-in shapes",
+        "Built-in images",
+        "Upload images",
+    ]
+    app.radio(key="source").set_value("public").run()
+    assert not app.exception
+    assert not train_button(app).disabled
+    assert any("Public CIFAR-10 images" in text for text in texts(app.caption))
+    assert [field.value for field in app.text_input] == ["airplane", "automobile", "bird"]
+    assert all(field.disabled for field in app.text_input)
+    assert texts(app.caption).count(f"24 images · showing {ui.THUMBNAIL_LIMIT}") == 3
+
+
+def test_built_in_shapes_fill_the_same_class_cards(small_examples: None) -> None:
+    app = new_app().run()
+    app.radio(key="source").set_value("shapes").run()
+    assert not app.exception
+    assert [field.value for field in app.text_input] == ["circle", "square", "triangle"]
+    assert all(field.disabled for field in app.text_input)
+    assert texts(app.caption).count(f"{IMAGES_PER_CLASS} images") == 3
+    assert "**Class 3**" in texts(app.markdown)
+
+
+def test_classifier_lab_is_emphasized_below_the_collapsed_lessons() -> None:
+    app = new_app().run()
+    assert not app.exception
+    elements = list(app.main)
+    lab_heading = app.header[0]
+    assert lab_heading.value == "Image Classifier"
+    lessons = [item for item in app.expander if item.label.startswith("Lesson ")]
+    assert len(lessons) == 8
+    assert elements.index(lab_heading) > max(elements.index(lesson) for lesson in lessons)
+    assert train_button(app) in elements[elements.index(lab_heading) :]
+    notes = by_label(app.expander, "Under the hood")
+    assert elements.index(notes) > elements.index(train_button(app))
+    assert all(not item.proto.expanded for item in app.expander)
+
+
 def test_training_renders_the_results(trained_app: AppTest) -> None:
     app = trained_app
     assert not app.exception
-    assert "How the run went" in texts(app.subheader)
+    assert "**How the run went**" in texts(app.markdown)
     assert not app.error
     assert not app.warning
+    tiles = {"Validation accuracy", "Validation loss", "Training accuracy", "Training time"}
+    assert tiles <= {metric.label for metric in app.metric}
 
     names = ["circle", "square", "triangle"]
     class_table = next(t.value for t in app.table if "Accuracy" in t.value.columns)
@@ -114,7 +167,9 @@ def test_training_renders_the_results(trained_app: AppTest) -> None:
     assert any(text.startswith("Measured on CPU") for text in captions)
     assert any(text.startswith("Loss is the mean cross-entropy") for text in captions)
     assert "**Recent runs**" in texts(app.markdown)
-    assert "**Validation confusion matrix**" in texts(app.markdown)
+    assert {"Training curves", "Confusion matrix", "Per-class accuracy"} <= {
+        tab.label for tab in app.tabs
+    }
 
 
 def test_training_adds_loss_and_confusion_figures(
@@ -123,7 +178,7 @@ def test_training_adds_loss_and_confusion_figures(
 ) -> None:
     fresh = new_app().run()
     configure_tiny_run(fresh).run()
-    assert len(images(trained_app)) - len(images(fresh)) == 2
+    assert len(images(trained_app)) - len(images(fresh)) == 3
 
 
 def test_prediction_names_a_class_and_confidence(trained_app: AppTest) -> None:
@@ -218,6 +273,7 @@ def test_upload_form_rejects_an_unreadable_file() -> None:
     app.file_uploader(key="files_1").set_value([("bad.png", b"nope", "image/png")]).run()
     assert not app.exception
     assert any("bad.png" in message for message in texts(app.error))
+    assert "**Class 2**" in texts(app.markdown)
     assert train_button(app).disabled
 
 
@@ -286,7 +342,7 @@ def test_training_error_from_the_library_is_shown(monkeypatch: pytest.MonkeyPatc
     app = _train_with(monkeypatch, lambda: TrainingError("No usable batches."), LearningMode.NOVEL)
     assert not app.exception
     assert texts(app.error) == ["No usable batches."]
-    assert "How the run went" not in texts(app.subheader)
+    assert "**How the run went**" not in texts(app.markdown)
 
 
 def test_transfer_download_failure_points_to_novel_mode(monkeypatch: pytest.MonkeyPatch) -> None:

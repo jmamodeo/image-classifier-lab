@@ -62,8 +62,8 @@ formula = '\mathrm{share}_i = e^{z_i} \big/ \sum_j e^{z_j}'
 changed = ["mode"]
 instructions = """\
   Stay on Built-in shapes. Change only Learning mode, from Transfer to Novel \
-  and back, and read the two parameter cards under the images. You do not need \
-  to press Train."""
+  and back, and read the two parameter cards in Under the hood, below the \
+  classifier. You do not need to press Train."""
 look_for = """\
   The total parameter count is the same on both cards. Transfer's trainable \
   count is only the new final layer. Novel's trainable count equals the total. \

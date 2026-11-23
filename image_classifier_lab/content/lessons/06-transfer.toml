@@ -24,8 +24,8 @@ paragraphs = [
     every parameter, including the new final layer. The final layer starts \
     random in both modes. What changes is the backbone: pretrained and frozen, \
     or random and trainable. The images, the loss, and the learning rate are \
-    the same. The cards under the images count both choices for the class \
-    count in the lab.""",
+    the same. The parameter cards in Under the hood count both choices for \
+    the class count in the lab.""",
 ]
 visual = "modes"
 

@@ -2,30 +2,30 @@
 
 [![CI](https://github.com/jmamodeo/image-classifier-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/jmamodeo/image-classifier-lab/actions/workflows/ci.yml)
 
-A Streamlit lab for learning how an image classifier works, and how that work lands on the hardware that runs it. Eight lessons sit above a training lab. Give the lab a few labeled images, or use the built-in circles, squares, and triangles, then train a ResNet-18 and read the charts.
+A Streamlit lab for learning how an image classifier works, and how that work lands on the hardware that runs it. Eight lessons sit above the Image Classifier. Upload a few labeled images, or pick one of the built-in sets, then train a ResNet-18 and read the charts.
 
 Two modes share the images, the loss, and the learning rate. **Transfer** starts from ImageNet weights and trains a new final layer while the backbone stays frozen. **Novel** starts from random weights and trains every layer.
 
-The **Hardware** sidebar lets you choose where to train, which inference backends to time, and the precision of the Core ML export.
+The **Hardware** sidebar lets you choose where to train, which inference backends to time, and the precision of the Core ML export. The training source offers built-in shapes, a small cached subset of the public CIFAR-10 dataset with airplane, automobile, and bird labels, or uploaded images.
 
 ![First open: eight lesson buttons, the objectives for Images as numbers, and the three color channels of a built-in drawing.](docs/home.png)
 
 ## The curriculum
 
-The lessons are in order, and any of them can be opened from the numbered buttons. A bar counts how many sections have been opened. A caption counts how many exercises have been marked done. Marking an exercise done is a checkbox, not a gate. **Training lab**, in the lesson bar, hides the lesson and leaves the training controls on the page. The settings stay in the sidebar the whole time.
+The eight lessons are stacked vertically in numbered, collapsed containers. Expand any lesson to read it; several can stay open at once. A bar counts how many exercises have been marked done. Marking an exercise done is a checkbox, not a gate. The **Image Classifier** is always visible below the lessons, framed like a standalone app: choose a data source, check the class cards, train, read the results, try an image, and export to Core ML. Built-in shapes, built-in images, and uploads all fill the same class cards. A collapsed **Under the hood** section below the classifier holds the explanations: the parameter cards, the augmentation preview, notes on the last run, and recent runs. The settings stay in the sidebar the whole time.
 
-Each lesson states its objectives, explains the idea with a diagram or a count taken from this model, and ends with exercises. Each exercise names which settings to change, lists the ones to leave at their defaults, says what to look for, and hides a short check until you open it.
+Each lesson states its objectives, explains the idea with a diagram or a count taken from this model, and ends with exercises. Each exercise names which settings to change, lists the ones to leave at their defaults, says what to look for, and hides a short check in a popover until you open it.
 
 | | Lesson | Exercise |
 | --- | --- | --- |
 | 1 | Images as numbers. Pixels, channels, the tensor shape, resize, and ImageNet normalization. | Choose Built-in shapes. Change nothing. Compare a training draw with the holdout picture. |
-| 2 | A neuron and a linear layer. Weights, bias, the dot product, and softmax. | Change only Learning mode, and compare the two parameter cards. |
+| 2 | A neuron and a linear layer. Weights, bias, the dot product, and softmax. | Change only Learning mode, and compare the two parameter cards in Under the hood. |
 | 3 | Loss, gradients, and the learning rate. Cross-entropy, a step downhill, and what Adam rescales. | Train three times. Change only the learning rate: 0.0001, then 0.001, then 0.03. |
 | 4 | Convolutions, depth, and residual connections. Filters, feature maps, and where the parameters sit. | Train once in Transfer, then once in Novel, and look at the first-layer filters. |
 | 5 | Epochs, batches, and overfitting. The holdout, augmentation, and the seed. | Train once at 15 epochs. Then train at 5 epochs with augmentation off. |
 | 6 | Transfer learning and training from scratch. Frozen layers and BatchNorm statistics. | Train Transfer, then Novel, at the defaults. Read the trainable counts and the BatchNorm caption. |
 | 7 | Accuracy, confusion, and confidence. What the percent beside a prediction is. | Read the confusion matrix of a default run. |
-| 8 | Arithmetic, memory, and the device. Multiply-adds, memory, on-device inference, and measurements from your own machine. | Compare CPU and GPU training across batch sizes. Compare export precisions and test the available inference backends, including Neural Engine and ALL where supported. |
+| 8 | Arithmetic, memory, and the device. Multiply-adds, memory, on-device inference, and measurements from your own machine. | Compare CPU and GPU training across batch sizes. Compare export precisions and test the available inference devices, including Neural Engine where supported. |
 
 ![The exercise at the end of Images as numbers, naming the settings to leave alone.](docs/exercise.png)
 
@@ -35,7 +35,7 @@ The diagrams are drawn in the app. A few of them are labeled as sketches: the on
 
 ## What a run looks like
 
-Built-in drawings, eight per class. The cards count trainable parameters before any training starts. For three classes that is 1,539 in transfer mode and all 11,178,051 in novel mode.
+Built-in drawings, eight per class. The parameter cards in **Under the hood** count trainable parameters before any training starts. For three classes that is 1,539 in transfer mode and all 11,178,051 in novel mode.
 
 ![Built-in circles, squares, and triangles, the parameter cards, and four augmented draws of a training square beside the validation square.](docs/augmentation.png)
 
@@ -63,9 +63,9 @@ The chart screenshots above are a default run: transfer mode, CPU, Adam at learn
 
 ## Hardware controls and measurements
 
-The **Hardware** sidebar has one control for the training device, checkboxes for inference backends, and one export precision control. Training always uses float32 on CPU, CUDA, or Metal (MPS). Unavailable choices are disabled and say why. The Neural Engine is for Core ML inference on Apple silicon, not training.
+The **Hardware** sidebar has **Training**, **Inference**, and **Precision** controls. Training always uses float32 on CPU, CUDA, or Metal (MPS); “Try an image” uses the device that trained the model. Unavailable choices are disabled; hover over one to see why. The Neural Engine option appears below CPU and requires CPU to be selected and Core ML to be available.
 
-All available inference backends start checked. Lesson 8 measures just the checked backends on the same image. Core ML timing uses the package for the selected precision; PyTorch stays in float32 and can be timed without a package when no Core ML backend is selected. Switch precision and export again to compare size, median latency, top-1 agreement, and the largest probability difference against float32 PyTorch.
+All available inference devices start checked. Lesson 8 measures the checked devices on the same image: CPU and GPU use float32 PyTorch, while Neural Engine uses Core ML's CPU_AND_NE setting, which may also run layers on CPU. Export a package to include Neural Engine; CPU and GPU can be timed without one. Switch precision and export again to compare size, median latency, top-1 agreement, and the largest probability difference against float32 PyTorch.
 
 The counts are computed from this ResNet-18 at the class count and batch size in the sidebar. A multiply-add is one multiplication of a weight by an input, added into a total, inside a convolution or a linear layer. Bias, BatchNorm, ReLU, and pooling are left out of the count. FLOPs, on this page, are twice the multiply-adds. A training step also runs a backward pass, which is not in that number.
 
@@ -77,13 +77,13 @@ The sentence in the screenshot below is the count for batch 4, 3 classes (the bu
 
 ![The hardware lesson with the Hardware sidebar: multiply-adds for one forward pass, and the memory parts for that model and batch.](docs/hardware.png)
 
-The lesson describes on-device privacy, network latency, energy, and Core ML compute units. Compare training seconds per epoch by device and batch size in the run log. In the inference table, similar latencies can suggest how Core ML ALL ran, but they do not prove which compute unit ran a layer.
+The lesson describes on-device privacy, network latency, energy, and Core ML compute units. Compare training seconds per epoch by device and batch size in the run log. Inference timing does not prove which compute unit ran a Core ML layer.
 
-The Hardware panel on an Intel Mac Pro (Xeon W-3245, AMD Radeon Pro W5700X, macOS 26.5.2). CUDA is unavailable and CPU_AND_NE is disabled because that Mac has no Neural Engine:
+This earlier Hardware panel on an Intel Mac Pro (Xeon W-3245, AMD Radeon Pro W5700X, macOS 26.5.2) predates the current device controls:
 
 ![The Hardware sidebar panel with the NVIDIA GPU and Core ML CPU_AND_NE options greyed out and a reason under each.](docs/hardware-panel.png)
 
-Lesson 8 on the same Mac, with the selected backends in one timing table:
+An earlier Lesson 8 on the same Mac, with the then-available Core ML settings in one timing table:
 
 ![Lesson 8 on an Intel Mac Pro: the on-device section, package size, and the timing table for the five available backends.](docs/hardware-timing.png)
 
