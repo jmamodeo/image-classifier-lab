@@ -184,7 +184,7 @@ ruff format --check .
 pytest --cov
 ```
 
-Changes go through a pull request into `main`; bots may merge once CI is green, but releases, DOIs, history rewrites and force-pushes need John's OK.
+Changes go through a pull request into `main` once CI is green. Releases, DOIs, history rewrites, and force-pushes need the maintainer's OK.
 
 Tests build every model with `weights=None` and block the weight download, so they stay offline and on CPU. The suite drives the real page with Streamlit's `AppTest`, including a one-epoch training run, and `pytest --cov` fails if coverage of `imagepro` drops below the floor set in `pyproject.toml`. GitHub Actions runs an import smoke test, Ruff, and `pytest --cov` on Python 3.11, 3.12, and 3.13.
 

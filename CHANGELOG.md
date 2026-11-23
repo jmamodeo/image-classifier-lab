@@ -4,7 +4,7 @@
 
 ### Changed
 
-- The README Development section states the merge rule.
+- The README Development section states that changes go through a pull request into `main` once CI is green, and that releases, DOIs, history rewrites, and force-pushes need the maintainer's OK.
 
 ## 1.1.1 - 2026-11-19
 
