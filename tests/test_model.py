@@ -7,7 +7,7 @@ import torch
 from torchvision.models import ResNet18_Weights
 from torchvision.models import resnet18 as real_resnet18
 
-from imagepro.model import (
+from image_classifier_lab.model import (
     LearningMode,
     architecture_parameter_counts,
     backbone_is_frozen,
@@ -30,7 +30,7 @@ def test_constructor_receives_those_weights(monkeypatch: pytest.MonkeyPatch) -> 
         captured["weights"] = weights
         return real_resnet18(weights=None)
 
-    monkeypatch.setattr("imagepro.model.resnet18", spy)
+    monkeypatch.setattr("image_classifier_lab.model.resnet18", spy)
     transfer = create_model(2, LearningMode.TRANSFER)
     assert captured["weights"] is ResNet18_Weights.IMAGENET1K_V1
     assert transfer.fc.out_features == 2

@@ -9,9 +9,9 @@ from string import Formatter
 
 import pytest
 
-from imagepro import curriculum, explanations
-from imagepro.content_files import CONTENT_DIR, fill, read_toml, read_toml_dir
-from imagepro.data import IMAGE_SIZE
+from image_classifier_lab import curriculum, explanations
+from image_classifier_lab.content_files import CONTENT_DIR, fill, read_toml, read_toml_dir
+from image_classifier_lab.data import IMAGE_SIZE
 
 ROOT = Path(__file__).resolve().parents[1]
 PLACEHOLDER = re.compile(r"\{[a-z_]+\}")
@@ -40,7 +40,8 @@ def test_content_folder_ships_inside_the_package() -> None:
     ]
     assert CONTENT_DIR.joinpath("README.md").is_file()
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    assert "content/**/*.toml" in project["tool"]["setuptools"]["package-data"]["imagepro"]
+    package_data = project["tool"]["setuptools"]["package-data"]["image_classifier_lab"]
+    assert "content/**/*.toml" in package_data
 
 
 def test_lessons_load_in_file_order() -> None:

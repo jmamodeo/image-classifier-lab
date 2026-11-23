@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "imagepro"
+name = "image-classifier-lab"
 version = "1.1.1"
 description = "A Streamlit curriculum for teaching how an image classifier learns."
 readme = "README.md"
@@ -43,28 +43,28 @@ Homepage = "https://github.com/jmamodeo/image-classifier-lab"
 Changelog = "https://github.com/jmamodeo/image-classifier-lab/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
-include = ["imagepro*"]
+include = ["image_classifier_lab*"]
 
 [tool.setuptools.package-data]
-imagepro = ["content/README.md", "content/**/*.toml"]
+image_classifier_lab = ["content/README.md", "content/**/*.toml"]
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-src = ["imagepro", "tests", "main.py"]
+src = ["image_classifier_lab", "tests", "main.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["imagepro"]
+known-first-party = ["image_classifier_lab"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --tb=short"
 
 [tool.coverage.run]
-source = ["imagepro"]
+source = ["image_classifier_lab"]
 
 [tool.coverage.report]
 fail_under = 95

@@ -19,7 +19,7 @@ import torch
 from PIL import Image
 from torch import nn
 
-from imagepro.data import (
+from image_classifier_lab.data import (
     IMAGE_SIZE,
     IMAGENET_MEAN,
     IMAGENET_STD,
@@ -32,7 +32,7 @@ COMPUTE_UNITS = ("CPU_ONLY", "CPU_AND_GPU", "CPU_AND_NE", "ALL")
 PYTORCH_BACKENDS = {"cpu": "CPU", "cuda": "GPU (CUDA)", "mps": "GPU (MPS)"}
 WARMUP_RUNS = 3
 MEASURE_RUNS = 10
-PACKAGE_NAME = "imagepro-classifier.mlpackage"
+PACKAGE_NAME = "image-classifier-lab.mlpackage"
 
 
 @dataclass(frozen=True)

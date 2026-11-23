@@ -152,27 +152,27 @@ One-line help on the sidebar controls still defines the setting under the cursor
 ## Layout
 
 ```
-main.py                   Streamlit entry point
-imagepro/curriculum.py    the eight lessons and their exercises
-imagepro/lesson_ui.py     lesson page, progress, and the run table
-imagepro/diagrams.py      the figures drawn in the lessons
-imagepro/demos.py         the small calculations behind those figures
-imagepro/measure.py       multiply-adds, memory parts, and timing summaries
-imagepro/coreml.py        Core ML export, verification, and inference timing
-imagepro/hardware.py      training and inference availability
-imagepro/data.py          loading, the holdout, augmentation
-imagepro/model.py         ResNet-18 and the parameter counts
-imagepro/training.py      the loop, metrics, prediction
-imagepro/insights.py      a few sentences about the finished curves
-imagepro/plots.py         loss, accuracy, confusion, class shares
-imagepro/examples.py      the built-in shapes
-imagepro/explanations.py  one-line help for the sidebar settings
-imagepro/content/         the lesson and explanation text, as TOML files (CC BY 4.0)
-imagepro/content_files.py reads the content files and fills in the code's numbers
-imagepro/ui.py            the page
-CITATION.cff              citation metadata
-LICENSE                   MIT license (everything outside imagepro/content/)
-LICENSE-CONTENT           CC BY 4.0 (everything in imagepro/content/)
+main.py                               Streamlit entry point
+image_classifier_lab/curriculum.py    the eight lessons and their exercises
+image_classifier_lab/lesson_ui.py     lesson page, progress, and the run table
+image_classifier_lab/diagrams.py      the figures drawn in the lessons
+image_classifier_lab/demos.py         the small calculations behind those figures
+image_classifier_lab/measure.py       multiply-adds, memory parts, and timing summaries
+image_classifier_lab/coreml.py        Core ML export, verification, and inference timing
+image_classifier_lab/hardware.py      training and inference availability
+image_classifier_lab/data.py          loading, the holdout, augmentation
+image_classifier_lab/model.py         ResNet-18 and the parameter counts
+image_classifier_lab/training.py      the loop, metrics, prediction
+image_classifier_lab/insights.py      a few sentences about the finished curves
+image_classifier_lab/plots.py         loss, accuracy, confusion, class shares
+image_classifier_lab/examples.py      the built-in shapes
+image_classifier_lab/explanations.py  one-line help for the sidebar settings
+image_classifier_lab/content/         the lesson and explanation text, as TOML files (CC BY 4.0)
+image_classifier_lab/content_files.py reads the content files and fills in the code's numbers
+image_classifier_lab/ui.py            the page
+CITATION.cff                          citation metadata
+LICENSE                               MIT license (everything outside image_classifier_lab/content/)
+LICENSE-CONTENT                       CC BY 4.0 (everything in image_classifier_lab/content/)
 ```
 
 ## Development
@@ -189,7 +189,7 @@ pytest --cov
 
 Changes go through a pull request into `main` once CI is green. Releases, DOIs, history rewrites, and force-pushes need the maintainer's OK.
 
-Tests build every model with `weights=None` and block the weight download, so they stay offline and on CPU. The suite drives the real page with Streamlit's `AppTest`, including a one-epoch training run, and `pytest --cov` fails if coverage of `imagepro` drops below the floor set in `pyproject.toml`. GitHub Actions runs an import smoke test, Ruff, and `pytest --cov` on Python 3.11, 3.12, and 3.13.
+Tests build every model with `weights=None` and block the weight download, so they stay offline and on CPU. The suite drives the real page with Streamlit's `AppTest`, including a one-epoch training run, and `pytest --cov` fails if coverage of `image_classifier_lab` drops below the floor set in `pyproject.toml`. GitHub Actions runs an import smoke test, Ruff, and `pytest --cov` on Python 3.11, 3.12, and 3.13.
 
 ## Boundaries
 
@@ -209,7 +209,7 @@ If you use this software, please cite it. GitHub's "Cite this repository" button
 
 Copyright (c) 2025-2026 John Amodeo.
 
-- **Teaching content**: everything in [`imagepro/content/`](imagepro/content/) (the lesson titles, objectives, explanations, exercises and checks, and the help text for the sidebar settings) is under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). See [LICENSE-CONTENT](LICENSE-CONTENT). Reuse is welcome with attribution to John Amodeo and a link to this repository.
+- **Teaching content**: everything in [`image_classifier_lab/content/`](image_classifier_lab/content/) (the lesson titles, objectives, explanations, exercises and checks, and the help text for the sidebar settings) is under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/). See [LICENSE-CONTENT](LICENSE-CONTENT). Reuse is welcome with attribution to John Amodeo and a link to this repository.
 - **Everything else**, including the code, this README, and the screenshots in `docs/`, is under the MIT license. See [LICENSE](LICENSE).
 
 See the [CHANGELOG](CHANGELOG.md) for release history.

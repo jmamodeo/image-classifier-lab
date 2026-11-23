@@ -7,8 +7,8 @@ import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from imagepro.coreml import COMPUTE_UNITS, coreml_prediction_reason
-from imagepro.training import TRAINING_DEVICE_LABELS, available_devices
+from image_classifier_lab.coreml import COMPUTE_UNITS, coreml_prediction_reason
+from image_classifier_lab.training import TRAINING_DEVICE_LABELS, available_devices
 
 NEURAL_ENGINE_REASON = "Neural Engine needs Apple silicon."
 

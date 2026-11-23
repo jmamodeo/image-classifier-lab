@@ -12,10 +12,10 @@ import pytest
 from PIL import Image
 from streamlit.testing.v1 import AppTest
 
-from imagepro import examples, ui
-from imagepro.data import LabeledImages
-from imagepro.errors import TrainingError
-from imagepro.model import LearningMode
+from image_classifier_lab import examples, ui
+from image_classifier_lab.data import LabeledImages
+from image_classifier_lab.errors import TrainingError
+from image_classifier_lab.model import LearningMode
 
 APP_PATH = str(Path(__file__).resolve().parent.parent / "main.py")
 TIMEOUT = 180

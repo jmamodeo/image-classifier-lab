@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from imagepro.model import LearningMode
-from imagepro.training import EpochMetrics
+from image_classifier_lab.model import LearningMode
+from image_classifier_lab.training import EpochMetrics
 
 _LOSS_MOVE = 0.02
 _ACCURACY_GAP = 0.25

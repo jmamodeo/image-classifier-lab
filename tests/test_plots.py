@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 
-from imagepro.plots import plot_confusion, plot_history, plot_probabilities
-from imagepro.training import EpochMetrics
+from image_classifier_lab.plots import plot_confusion, plot_history, plot_probabilities
+from image_classifier_lab.training import EpochMetrics
 
 
 def test_history_plot_overlays_train_and_validation() -> None:

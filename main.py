@@ -5,7 +5,7 @@ Start the app with::
     streamlit run main.py
 """
 
-from imagepro.ui import main
+from image_classifier_lab.ui import main
 
 if __name__ == "__main__":
     main()

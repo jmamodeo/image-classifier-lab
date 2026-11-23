@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from imagepro.insights import summarize_training
-from imagepro.model import LearningMode
-from imagepro.training import EpochMetrics
+from image_classifier_lab.insights import summarize_training
+from image_classifier_lab.model import LearningMode
+from image_classifier_lab.training import EpochMetrics
 
 
 def _history(*rows: tuple[float, float, float, float]) -> tuple[EpochMetrics, ...]:

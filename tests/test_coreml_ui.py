@@ -9,14 +9,14 @@ import pytest
 from streamlit.testing.v1 import AppTest
 from torch import nn
 
-from imagepro.coreml import Export, Timing, Verification
-from imagepro.examples import make_shape_dataset
-from imagepro.hardware import detect_hardware
-from imagepro.lesson_ui import DONE_KEY, RUN_LOG_KEY
-from imagepro.measure import make_run_record
-from imagepro.model import LearningMode, count_parameters, create_model
-from imagepro.training import EpochMetrics, TrainResult
-from imagepro.ui import Artifact
+from image_classifier_lab.coreml import Export, Timing, Verification
+from image_classifier_lab.examples import make_shape_dataset
+from image_classifier_lab.hardware import detect_hardware
+from image_classifier_lab.lesson_ui import DONE_KEY, RUN_LOG_KEY
+from image_classifier_lab.measure import make_run_record
+from image_classifier_lab.model import LearningMode, count_parameters, create_model
+from image_classifier_lab.training import EpochMetrics, TrainResult
+from image_classifier_lab.ui import Artifact
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -83,7 +83,7 @@ def _hardware_app(
         mps_available=lambda: mps,
         coreml_runtime_reason=lambda: None,
     )
-    monkeypatch.setattr("imagepro.ui.detect_hardware", lambda: options)
+    monkeypatch.setattr("image_classifier_lab.ui.detect_hardware", lambda: options)
     app = AppTest.from_file(str(ROOT / "main.py"), default_timeout=60)
     if trained:
         app.session_state["artifact"] = _artifact(nn.Identity())
@@ -141,8 +141,8 @@ def test_selected_backends_and_precision_drive_lesson_timing(
             for unit in backends
         )
 
-    monkeypatch.setattr("imagepro.ui.export_model", convert)
-    monkeypatch.setattr("imagepro.lesson_ui.benchmark_export", measure)
+    monkeypatch.setattr("image_classifier_lab.ui.export_model", convert)
+    monkeypatch.setattr("image_classifier_lab.lesson_ui.benchmark_export", measure)
     app.button(key="nav-hardware").click().run()
     assert not app.exception
     assert not any(item.label == "Measure on-device inference" for item in app.button)
@@ -188,7 +188,7 @@ def test_pytorch_timing_without_export_and_empty_selection(monkeypatch: pytest.M
         assert export is None and backends == ("cpu",)
         raise RuntimeError("Timer failed")
 
-    monkeypatch.setattr("imagepro.lesson_ui.benchmark_export", measure)
+    monkeypatch.setattr("image_classifier_lab.lesson_ui.benchmark_export", measure)
     next(item for item in app.button if item.label == "Measure on-device inference").click().run()
     assert any("Timer failed" in item.value for item in app.error)
     app.sidebar.checkbox(key="inference-cpu").uncheck().run()
@@ -202,12 +202,12 @@ def test_conversion_and_verification_failures_are_reported(monkeypatch: pytest.M
     def convert(model, names, images, precision):
         raise RuntimeError("Conversion failed")
 
-    monkeypatch.setattr("imagepro.ui.export_model", convert)
+    monkeypatch.setattr("image_classifier_lab.ui.export_model", convert)
     next(item for item in app.button if item.label == "Convert to Core ML").click().run()
     assert any("Conversion failed" in item.value for item in app.error)
     assert not app.get("download_button")
     monkeypatch.setattr(
-        "imagepro.ui.export_model",
+        "image_classifier_lab.ui.export_model",
         lambda *args: Export(b"zip", 128, "float32", None, "Runtime failed"),
     )
     next(item for item in app.button if item.label == "Convert to Core ML").click().run()

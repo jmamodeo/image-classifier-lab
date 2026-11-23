@@ -10,9 +10,9 @@ import torch.nn.functional as F
 from torch import nn
 from torch.utils.data import TensorDataset
 
-from imagepro.errors import TrainingError
-from imagepro.model import LearningMode, create_model
-from imagepro.training import (
+from image_classifier_lab.errors import TrainingError
+from image_classifier_lab.model import LearningMode, create_model
+from image_classifier_lab.training import (
     BatchPlan,
     available_devices,
     fit,

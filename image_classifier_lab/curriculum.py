@@ -1,7 +1,7 @@
 """The lesson sequence.
 
 Each section has objectives, a few blocks of explanation, and exercises. The
-text lives in ``imagepro/content/lessons``, one TOML file per section. Numbers
+text lives in ``image_classifier_lab/content/lessons``, one TOML file per section. Numbers
 that the training code also uses are written there as placeholders and filled
 in from those constants. Diagrams are drawn by the app from the block's
 ``visual`` name; this module does not import Streamlit.
@@ -13,15 +13,15 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from imagepro.content_files import fill, read_toml_dir
-from imagepro.data import (
+from image_classifier_lab.content_files import fill, read_toml_dir
+from image_classifier_lab.data import (
     FLIP_PROBABILITY,
     IMAGE_SIZE,
     IMAGENET_MEAN,
     IMAGENET_STD,
     MAX_ROTATION_DEGREES,
 )
-from imagepro.training import (
+from image_classifier_lab.training import (
     DEFAULT_BATCH_SIZE,
     DEFAULT_EPOCHS,
     DEFAULT_LEARNING_RATE,

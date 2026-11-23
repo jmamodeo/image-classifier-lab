@@ -1,4 +1,4 @@
-# Direct dependencies, pinned to the versions used to test ImagePro 1.0.0.
+# Direct dependencies, pinned to the versions used to test release 1.0.0.
 # On a machine without an NVIDIA GPU, install the CPU builds of PyTorch first
 # so pip does not replace them with a larger CUDA wheel:
 #
