@@ -7,7 +7,7 @@
 - `[project.urls]` in `pyproject.toml` now includes `Repository` and `Issues` links alongside `Homepage` and `Changelog`.
 - The Python package is renamed to `image_classifier_lab`, matching the repository name, and the distribution name is now `image-classifier-lab`. Imports, the content folder (`image_classifier_lab/content/`, still CC BY 4.0), and the Core ML export file name (`image-classifier-lab.mlpackage`) follow the new name, and the page footer shows the app title.
 - The lesson text and the sidebar explanations moved out of `image_classifier_lab/curriculum.py` and `image_classifier_lab/explanations.py` into TOML files under `image_classifier_lab/content/`, which ship inside the package. The rendered text is unchanged. Everything in `image_classifier_lab/content/` is licensed under CC BY 4.0 (`LICENSE-CONTENT`); everything else stays MIT.
-- The README Development section states that changes go through a pull request into `main`, that authors never merge their own pull requests, that the reviewer comments instead of approving and squash-merges a clean pull request once CI is green, that branches deploying to production wait for the maintainer to merge, and that releases, DOIs, history rewrites, and force-pushes need the maintainer's OK.
+- The README Development section states that changes go through a pull request into `main` once CI is green, and that releases and DOIs are cut by the maintainer.
 
 ## 1.1.1 - 2026-11-19
 

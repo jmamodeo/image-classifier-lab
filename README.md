@@ -187,7 +187,7 @@ ruff format --check .
 pytest --cov
 ```
 
-Changes go through a pull request into `main`. Authors never merge their own pull requests. The reviewer leaves the review as a comment, not a GitHub Approval, and when the pull request is clean and CI is green squash-merges it with `gh pr merge --squash --match-head-commit <sha> --delete-branch`. Branches that deploy to production wait for the maintainer to merge. Releases, DOIs, history rewrites, and force-pushes need the maintainer's OK.
+Changes go through a pull request into `main` once CI is green. Releases and DOIs are cut by the maintainer.
 
 Tests build every model with `weights=None` and block the weight download, so they stay offline and on CPU. The suite drives the real page with Streamlit's `AppTest`, including a one-epoch training run, and `pytest --cov` fails if coverage of `image_classifier_lab` drops below the floor set in `pyproject.toml`. GitHub Actions runs an import smoke test, Ruff, and `pytest --cov` on Python 3.11, 3.12, and 3.13.
 
