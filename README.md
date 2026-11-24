@@ -63,7 +63,7 @@ The chart screenshots above are a default run: transfer mode, CPU, Adam at learn
 
 ## Hardware controls and measurements
 
-The **Hardware** sidebar has **Training**, **Inference**, and **Precision** controls. Training always uses float32 on CPU, CUDA, or Metal (MPS); “Try an image” uses the device that trained the model. Unavailable choices are disabled; hover over one to see why. The Neural Engine option appears below CPU and requires CPU to be selected and Core ML to be available.
+The **Hardware** sidebar has **Training**, **Inference**, and **Precision** controls. Training always uses float32 on CPU, CUDA, or Metal (MPS); “Try an image” uses the device that trained the model. Unavailable choices are disabled. The Neural Engine option appears below CPU and requires CPU to be selected and Core ML to be available.
 
 All available inference devices start checked. Lesson 8 measures the checked devices on the same image: CPU and GPU use float32 PyTorch, while Neural Engine uses Core ML's CPU_AND_NE setting, which may also run layers on CPU. Export a package to include Neural Engine; CPU and GPU can be timed without one. Switch precision and export again to compare size, median latency, top-1 agreement, and the largest probability difference against float32 PyTorch.
 
