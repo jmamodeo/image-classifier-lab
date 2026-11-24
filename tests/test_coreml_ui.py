@@ -97,7 +97,7 @@ def test_plain_linux_panel_shows_disabled_hardware_reasons(monkeypatch: pytest.M
     assert "Hardware" in [item.value for item in app.sidebar.subheader]
     training = next(item for item in app.sidebar.radio if item.label == "Training")
     assert training.options == ["CPU"]
-    assert "labeled images" in training.help and "adjusting its weights" in training.help
+    assert not training.help
     unavailable_training_gpu = app.sidebar.radio(key="training-gpu-unavailable")
     assert unavailable_training_gpu.disabled and unavailable_training_gpu.value is None
     assert unavailable_training_gpu.options == ["GPU"]
@@ -107,7 +107,7 @@ def test_plain_linux_panel_shows_disabled_hardware_reasons(monkeypatch: pytest.M
     assert not cpu.disabled and cpu.value
     neural_engine = app.sidebar.checkbox(key="inference-CPU_AND_NE")
     assert neural_engine.disabled and not neural_engine.value
-    assert "needs Apple silicon" in neural_engine.help
+    assert not neural_engine.help
     assert [
         item.label
         for item in app.sidebar.checkbox
@@ -126,11 +126,10 @@ def test_plain_linux_panel_shows_disabled_hardware_reasons(monkeypatch: pytest.M
     precision = app.sidebar.radio(key="coreml_precision")
     assert precision.label == "Precision"
     assert precision.options == ["float32", "float16"] and precision.value == "float32"
-    assert "number format" in precision.help and "model size" in precision.help
-    help_text = [item.value for item in app.sidebar.markdown]
-    assert any("training-gpu-reason" in text and "No compatible GPU" in text for text in help_text)
-    assert any("inference-gpu-reason" in text and "No compatible GPU" in text for text in help_text)
-    assert any("Inference uses a trained model" in text for text in help_text)
+    assert not precision.help
+    assert not precision.proto.horizontal
+    markdown = [item.value for item in app.sidebar.markdown]
+    assert not any("hardware-unavailable" in text or "hardware-help" in text for text in markdown)
 
 
 def test_neural_engine_explains_unavailable_coreml(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -139,9 +138,6 @@ def test_neural_engine_explains_unavailable_coreml(monkeypatch: pytest.MonkeyPat
     assert not app.exception
     neural_engine = app.sidebar.checkbox(key="inference-CPU_AND_NE")
     assert neural_engine.disabled and not neural_engine.value
-    assert reason in neural_engine.help
-    assert "both CPU and Neural Engine" in neural_engine.help
-    assert any(reason in item.value for item in app.sidebar.markdown)
     assert app.sidebar.checkbox(key="inference-cpu").value
 
 
@@ -151,7 +147,7 @@ def test_intel_mac_shows_disabled_neural_engine(monkeypatch: pytest.MonkeyPatch)
     assert app.sidebar.checkbox(key="inference-cpu").value
     assert app.sidebar.checkbox(key="inference-mps").value
     neural_engine = app.sidebar.checkbox(key="inference-CPU_AND_NE")
-    assert neural_engine.disabled and "needs Apple silicon" in neural_engine.help
+    assert neural_engine.disabled
 
 
 def test_gpu_becoming_unavailable_disables_both_choices(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -268,7 +264,7 @@ def test_cpu_selection_controls_neural_engine_benchmark(monkeypatch: pytest.Monk
     assert app.sidebar.checkbox(key="inference-CPU_AND_NE").value
     app.sidebar.checkbox(key="inference-cpu").uncheck().run()
     neural_engine = app.sidebar.checkbox(key="inference-CPU_AND_NE")
-    assert neural_engine.disabled and "Select CPU" in neural_engine.help
+    assert neural_engine.disabled
     next(item for item in app.button if item.label == "Measure on-device inference").click().run()
     assert calls == [(None, ("mps",))]
 

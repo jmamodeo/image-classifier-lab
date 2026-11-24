@@ -87,11 +87,6 @@ _DOWNLOAD_MESSAGE = (
     "connection, or switch to Novel mode, which starts from random weights and does "
     "not download anything."
 )
-_GPU_UNAVAILABLE_HELP = "No compatible GPU is available to this app."
-_INFERENCE_HELP = (
-    "Inference uses a trained model to make predictions. Select devices to compare "
-    "their prediction speed in Lesson 8."
-)
 
 
 @dataclass(frozen=True)
@@ -171,86 +166,6 @@ h1#welcome-to-image-classifier-lab {{
 }}
 .st-key-hardware-training-gpu {{
     margin-top: -0.4rem;
-}}
-.st-key-hardware-training-gpu,
-.st-key-hardware-inference-gpu,
-.st-key-hardware-inference-neural {{
-    position: relative;
-    gap: 0;
-}}
-.st-key-hardware-training-gpu [data-testid="stElementContainer"]:has(.hardware-unavailable-help),
-.st-key-hardware-inference-gpu [data-testid="stElementContainer"]:has(.hardware-unavailable-help),
-.st-key-hardware-inference-neural
-    [data-testid="stElementContainer"]:has(.hardware-unavailable-help) {{
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4rem;
-    height: 1.6rem;
-    z-index: 1;
-}}
-.st-key-hardware-inference-neural
-    [data-testid="stElementContainer"]:has(.hardware-unavailable-help) {{
-    width: 11rem;
-}}
-.hardware-unavailable-help {{
-    display: block;
-    position: relative;
-    width: 4rem;
-    height: 1.6rem;
-    cursor: help;
-}}
-.st-key-hardware-inference-neural .hardware-unavailable-help {{
-    width: 11rem;
-}}
-.hardware-help {{
-    display: inline-flex;
-    position: relative;
-    align-items: center;
-    justify-content: center;
-    width: 1rem;
-    height: 1rem;
-    margin-left: 0.125rem;
-    vertical-align: middle;
-    cursor: help;
-}}
-.st-key-hardware-backward [data-testid="stTooltipIcon"],
-.st-key-hardware-precision [data-testid="stTooltipIcon"],
-.st-key-hardware-inference-neural [data-testid="stTooltipIcon"],
-.hardware-help {{
-    color: #7d858a;
-}}
-.st-key-hardware-backward [data-testid="stTooltipIcon"] svg,
-.st-key-hardware-precision [data-testid="stTooltipIcon"] svg,
-.st-key-hardware-inference-neural [data-testid="stTooltipIcon"] svg,
-.hardware-help svg {{
-    stroke: currentColor;
-    stroke-width: 2px;
-}}
-.hardware-tooltip {{
-    visibility: hidden;
-    position: absolute;
-    top: calc(100% + 0.25rem);
-    left: 0;
-    z-index: 20;
-    width: 14rem;
-    padding: 0.375rem 0.75rem;
-    border-radius: 0.5rem;
-    background: #f1f3f5;
-    color: #17202a;
-    font-size: 0.875rem;
-    font-weight: 400;
-    line-height: 1.6;
-    pointer-events: none;
-}}
-.hardware-help .hardware-tooltip {{
-    left: -5rem;
-}}
-.hardware-help:hover .hardware-tooltip,
-.hardware-help:focus .hardware-tooltip,
-.hardware-unavailable-help:hover .hardware-tooltip,
-.hardware-unavailable-help:focus .hardware-tooltip {{
-    visibility: visible;
 }}
 .st-key-classifier-app {{
     gap: 0;
@@ -691,17 +606,6 @@ def _slot_count(source: str) -> int:
     return len(st.session_state.class_ids)
 
 
-def _unavailable_tooltip(tooltip_id: str, label: str, reason: str) -> None:
-    st.markdown(
-        '<span class="hardware-unavailable-help" tabindex="0" role="note" '
-        f'aria-label="{html.escape(label)} unavailable" '
-        f'aria-describedby="{html.escape(tooltip_id)}">'
-        f'<span id="{html.escape(tooltip_id)}" class="hardware-tooltip" role="tooltip">'
-        f"{html.escape(reason)}</span></span>",
-        unsafe_allow_html=True,
-    )
-
-
 def _sidebar() -> Settings:
     concepts = CONCEPTS
     st.sidebar.header("Settings")
@@ -720,10 +624,6 @@ def _sidebar() -> Settings:
                 "Training",
                 options=tuple(devices),
                 format_func=devices.__getitem__,
-                help=(
-                    "Training teaches the model from labeled images by adjusting its weights. "
-                    "Select the device used to train the model."
-                ),
             )
             if not gpu.available:
                 with st.container(key="hardware-training-gpu"):
@@ -735,21 +635,9 @@ def _sidebar() -> Settings:
                         label_visibility="collapsed",
                         key="training-gpu-unavailable",
                     )
-                    _unavailable_tooltip("training-gpu-reason", "GPU", _GPU_UNAVAILABLE_HELP)
         backends = []
         with st.container(key="hardware-forward"):
-            st.markdown(
-                '<strong>Inference</strong> <span class="hardware-help" tabindex="0" '
-                'role="img" aria-label="About inference" aria-describedby="inference-help">'
-                '<svg aria-hidden="true" width="1rem" height="1rem" viewBox="0 0 24 24" '
-                'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
-                'stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle>'
-                '<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>'
-                '<line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
-                '<span id="inference-help" class="hardware-tooltip" role="tooltip">'
-                f"{_INFERENCE_HELP}</span></span>",
-                unsafe_allow_html=True,
-            )
+            st.markdown("**Inference**")
             cpu_selected = st.checkbox(
                 "CPU", value=cpu.available, disabled=not cpu.available, key="inference-cpu"
             )
@@ -763,18 +651,13 @@ def _sidebar() -> Settings:
                 neural_reasons.append(neural_engine.reason)
             if not cpu_selected:
                 neural_reasons.append("Select CPU to enable Neural Engine.")
-            neural_help = "Core ML may use both CPU and Neural Engine; it chooses where layers run."
-            neural_help = " ".join((*neural_reasons, neural_help))
             with st.container(key="hardware-inference-neural"):
                 neural_selected = st.checkbox(
                     "Neural Engine",
                     value=neural_engine.available,
                     disabled=bool(neural_reasons),
                     key=f"inference-{neural_engine.key}",
-                    help=neural_help,
                 )
-                if neural_reasons:
-                    _unavailable_tooltip("inference-neural-reason", "Neural Engine", neural_help)
 
             with st.container(key="hardware-inference-gpu"):
                 checked = st.checkbox(
@@ -783,8 +666,6 @@ def _sidebar() -> Settings:
                     disabled=not gpu.available,
                     key=f"inference-{gpu.key}",
                 )
-                if not gpu.available:
-                    _unavailable_tooltip("inference-gpu-reason", "GPU", _GPU_UNAVAILABLE_HELP)
             if checked and gpu.available:
                 backends.append(gpu.key)
             if neural_selected and not neural_reasons:
@@ -794,13 +675,7 @@ def _sidebar() -> Settings:
             precision: Precision = st.radio(
                 "Precision",
                 options=("float32", "float16"),
-                horizontal=True,
                 key="coreml_precision",
-                help=(
-                    "Precision is the number format used in the exported Core ML model. "
-                    "Float16 can reduce model size but may change scores; "
-                    "PyTorch training stays in float32."
-                ),
             )
     coreml_reason = next(option.reason for option in hardware.inference if option.key == "CPU_ONLY")
 
